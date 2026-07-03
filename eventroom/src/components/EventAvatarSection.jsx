@@ -113,7 +113,7 @@ const EventAvatarSection = () => {
                       <div className="w-7 h-7 rounded-full bg-gradient-to-r from-purple-400 to-pink-400 border-2 border-[#0a1f44]" />
                       <div className="w-7 h-7 rounded-full bg-gradient-to-r from-blue-400 to-cyan-400 border-2 border-[#0a1f44]" />
                     </div>
-                    <span className="text-white text-xs font-medium">1,234+ created</span>
+                    <span className="text-white text-xs font-medium">Images  created</span>
                   </div>
                   <span className="px-3 py-1 bg-cyan-500/30 backdrop-blur-sm rounded-full text-white text-xs font-bold border border-cyan-400/30">
                     <FaUsers className="inline mr-1 text-cyan-300 text-xs" />
