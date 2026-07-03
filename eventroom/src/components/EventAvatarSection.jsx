@@ -1,63 +1,145 @@
-// components/EventAvatarSection.jsx – Avatar creation strip
+// components/EventAvatarSection.jsx – Avatar creation strip with brand colors
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { useSelector } from 'react-redux';
-import { FaUserAstronaut, FaArrowRight } from 'react-icons/fa';
+import { 
+  FaUserAstronaut, 
+  FaArrowRight, 
+  FaImage,
+  FaCamera,
+  FaUsers,
+  FaUpload,
+  FaUserPlus
+} from 'react-icons/fa';
 
 const EventAvatarSection = () => {
   const { userInfo } = useSelector((state) => state.auth);
 
   const getStartedLink = userInfo ? '/dashboard/events/new' : '/signup';
-  const getStartedText = userInfo ? 'Create Your Event Avatar' : 'Start Creating';
+  const getStartedText = userInfo ? 'Create Your Badge' : 'Start Creating';
 
   return (
-    <section
-      id="avatar"
-      className="relative w-full py-16 px-4 sm:px-6 lg:px-8 flex items-center justify-center bg-cover bg-center bg-no-repeat overflow-hidden"
-      style={{
-        backgroundImage: `url('https://images.unsplash.com/photo-1535378917042-10a22c95931a?ixlib=rb-4.0.3&auto=format&fit=crop&w=1350&q=80')`,
-      }}
-    >
-      {/* Dark overlay – lighter than CTA for variety */}
-      <div className="absolute inset-0 bg-gradient-to-r from-[#0a1f44]/90 via-[#0a1f44]/80 to-[#0a1f44]/90" />
-
+    <section className="relative w-full py-20 px-4 sm:px-6 lg:px-8 flex items-center overflow-hidden bg-[#0a1f44]">
+      
+      {/* Background with gradient */}
+      <div className="absolute inset-0 bg-gradient-to-r from-[#0a1f44]/95 via-[#0a1f44]/90 to-[#0a1f44]/95" />
+      
       {/* Subtle glow */}
-      <div className="absolute inset-0 bg-gradient-to-t from-purple-500/10 to-transparent animate-pulse-slow pointer-events-none" />
+      <div className="absolute inset-0 bg-gradient-to-t from-cyan-500/10 to-transparent animate-pulse-slow pointer-events-none" />
 
-      <div className="relative z-10 max-w-4xl w-full text-center">
-        {/* Icon / badge */}
-        <div className="inline-flex items-center justify-center gap-2 bg-white/10 backdrop-blur-sm border border-white/20 rounded-full px-5 py-2 mb-6">
-          <FaUserAstronaut className="text-purple-300 text-sm" />
-          <span className="text-white text-sm font-medium">Your Event Persona</span>
+      {/* Decorative elements */}
+      <div className="absolute top-0 right-0 w-1/2 h-full bg-gradient-to-l from-cyan-500/5 to-transparent" />
+      <div className="absolute bottom-0 left-0 w-1/3 h-1/2 bg-gradient-to-r from-blue-500/5 to-transparent" />
+
+      <div className="relative z-10 max-w-6xl w-full mx-auto grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-center">
+        
+        {/* Left Column - Text Content */}
+        <div className="text-center lg:text-left">
+          {/* Badge */}
+          <div className="inline-flex items-center gap-2 bg-white/10 backdrop-blur-sm border border-white/20 rounded-full px-5 py-2 mb-6">
+            <FaUserAstronaut className="text-cyan-300 text-sm" />
+            <span className="text-white text-sm font-medium">EventRoom Avatars</span>
+          </div>
+
+          {/* Headline */}
+          <h2 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold text-white mb-4 leading-tight">
+            Your{' '}
+            <span className="bg-gradient-to-r from-cyan-300 to-blue-400 bg-clip-text text-transparent">
+              Event Badge
+            </span>
+            <br />
+            <span className="text-white/90">in Seconds</span>
+          </h2>
+
+          {/* Description */}
+          <p className="max-w-lg mx-auto lg:mx-0 text-gray-300 text-base sm:text-lg mb-6 leading-relaxed">
+            Upload your photo and name. We'll generate a professional event badge 
+            that makes you stand out at any event.
+          </p>
+
+          {/* Feature tags - using brand colors */}
+          <div className="flex flex-wrap gap-3 mb-8 justify-center lg:justify-start">
+            <span className="flex items-center gap-1.5 px-3 py-1.5 bg-cyan-500/20 border border-cyan-400/30 rounded-full text-cyan-200 text-xs font-medium">
+              <FaUpload className="text-xs" /> Photo Upload
+            </span>
+            <span className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-500/20 border border-blue-400/30 rounded-full text-blue-200 text-xs font-medium">
+              <FaUserPlus className="text-xs" /> Add Name
+            </span>
+            <span className="flex items-center gap-1.5 px-3 py-1.5 bg-purple-500/20 border border-purple-400/30 rounded-full text-purple-200 text-xs font-medium">
+              <FaCamera className="text-xs" /> Instant Share
+            </span>
+          </div>
+
+          {/* CTA Button - Using brand cyan colors like in CTA section */}
+          <Link
+            to={getStartedLink}
+            className="group inline-flex items-center gap-3 bg-gradient-to-r from-cyan-400 to-cyan-300 hover:from-cyan-300 hover:to-cyan-200 text-[#0a1f44] px-8 py-4 rounded-xl font-bold text-lg transition-all duration-300 transform hover:-translate-y-0.5 hover:shadow-2xl hover:shadow-cyan-400/30"
+          >
+            {getStartedText}
+            <FaArrowRight className="group-hover:translate-x-1 transition-transform text-sm" />
+          </Link>
+
+          {/* Trust indicator */}
+          <p className="text-gray-400 text-xs mt-4 flex items-center justify-center lg:justify-start gap-2">
+            <span className="w-1.5 h-1.5 bg-cyan-400 rounded-full inline-block" />
+            Free to use • No credit card required
+          </p>
         </div>
 
-        {/* Headline */}
-        <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-white mb-4 leading-tight">
-          Create your{' '}
-          <span className="bg-gradient-to-r from-purple-300 to-cyan-300 bg-clip-text text-transparent">
-            event avatar
-          </span>
-        </h2>
+        {/* Right Column - Image */}
+        <div className="flex justify-center lg:justify-end">
+          <div className="relative w-full max-w-md">
+            {/* Glow effect behind image */}
+            <div className="absolute -inset-4 bg-cyan-500/20 rounded-2xl blur-3xl" />
+            
+            {/* Image container */}
+            <div className="relative rounded-2xl overflow-hidden shadow-2xl border border-white/10 bg-[#0a1f44]">
+              <img
+                src="/avatar.jpg"
+                alt="Event avatar examples"
+                className="w-full h-auto object-cover"
+                loading="lazy"
+              />
+              
+              {/* Gradient overlay */}
+              <div className="absolute inset-0 bg-gradient-to-t from-[#0a1f44]/60 via-transparent to-transparent" />
+              
+              {/* Floating badge on image */}
+              <div className="absolute bottom-4 left-4 right-4 bg-black/50 backdrop-blur-lg rounded-xl px-4 py-3 border border-white/10">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className="flex -space-x-2">
+                      <div className="w-7 h-7 rounded-full bg-gradient-to-r from-cyan-400 to-blue-400 border-2 border-[#0a1f44]" />
+                      <div className="w-7 h-7 rounded-full bg-gradient-to-r from-purple-400 to-pink-400 border-2 border-[#0a1f44]" />
+                      <div className="w-7 h-7 rounded-full bg-gradient-to-r from-blue-400 to-cyan-400 border-2 border-[#0a1f44]" />
+                    </div>
+                    <span className="text-white text-xs font-medium">1,234+ created</span>
+                  </div>
+                  <span className="px-3 py-1 bg-cyan-500/30 backdrop-blur-sm rounded-full text-white text-xs font-bold border border-cyan-400/30">
+                    <FaUsers className="inline mr-1 text-cyan-300 text-xs" />
+                    Popular
+                  </span>
+                </div>
+              </div>
+            </div>
 
-        {/* Description */}
-        <p className="max-w-2xl mx-auto text-gray-300 text-sm sm:text-base mb-8 leading-relaxed">
-          Stand out with a custom avatar for your event profile.
-          Let your guests recognise you before they even arrive.
-        </p>
+            {/* Top floating badge */}
+            <div className="absolute -top-3 -right-3 bg-gradient-to-r from-cyan-400 to-blue-400 rounded-xl px-4 py-2 shadow-xl border border-white/20">
+              <div className="flex items-center gap-2">
+                <FaCamera className="text-[#0a1f44] text-xs" />
+                <span className="text-[#0a1f44] text-xs font-bold">Photo Upload</span>
+              </div>
+            </div>
 
-        {/* Button */}
-        <Link
-          to={getStartedLink}
-          className="group inline-flex items-center gap-3 bg-gradient-to-r from-purple-400 to-purple-300 hover:from-purple-300 hover:to-purple-200 text-[#0a1f44] px-8 py-4 rounded-xl font-bold text-lg transition-all duration-300 transform hover:-translate-y-1 hover:shadow-2xl hover:shadow-purple-400/30"
-        >
-          {getStartedText}
-          <FaArrowRight className="group-hover:translate-x-1 transition-transform" />
-        </Link>
-
-        {/* Small footnote */}
-        <p className="text-gray-500 text-xs mt-4">
-          Start with a template or upload your own design.
-        </p>
+            {/* Live indicator */}
+            <div className="absolute -top-3 -left-3 bg-black/60 backdrop-blur-md rounded-xl px-3 py-1.5 border border-white/10 shadow-xl">
+              <div className="flex items-center gap-2">
+                <span className="w-1.5 h-1.5 bg-green-400 rounded-full animate-pulse" />
+                <span className="text-white text-xs font-medium">Live</span>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
 
       <style>{`
@@ -65,8 +147,15 @@ const EventAvatarSection = () => {
           0%, 100% { opacity: 0.3; }
           50% { opacity: 0.7; }
         }
+        @keyframes pulse {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0.3; }
+        }
         .animate-pulse-slow {
           animation: pulse-slow 5s ease-in-out infinite;
+        }
+        .animate-pulse {
+          animation: pulse 2s ease-in-out infinite;
         }
       `}</style>
     </section>
