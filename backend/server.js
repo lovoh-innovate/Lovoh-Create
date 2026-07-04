@@ -49,6 +49,7 @@ app.use(cors({
         'https://localhost',
         'capacitor://localhost',
         'https://test.eventroom.space',
+        'https://staging.eventroom.space',
     ],
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'HEAD'],
