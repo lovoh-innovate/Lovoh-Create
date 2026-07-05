@@ -208,7 +208,7 @@ const EventCTASection = () => {
               <FaTimes className="text-xl" />
             </button>
 
-            <h3 className="text-xl font-bold text-gray-900 text-center mb-2">Contact us</h3>
+            <h3 className="text-xl font-bold text-gray-900 text-center mb-2">Contact us Now</h3>
             <p className="text-gray-500 text-sm text-center mb-6">Choose how you'd like to reach us</p>
 
             <div className="space-y-3">
