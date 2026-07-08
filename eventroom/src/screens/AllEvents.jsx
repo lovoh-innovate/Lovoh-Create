@@ -1,6 +1,6 @@
 // screens/AllEvents.jsx – Full updated version (no subdomain)
-import React, { useState, useMemo } from 'react';
-import { Link } from 'react-router-dom';
+import React, { useState, useMemo, useEffect } from 'react';
+import { Link, useLocation } from 'react-router-dom';
 import { useGetEventsQuery } from '../slices/eventApiSlice';
 import {
   FaCalendarAlt, FaMapMarkerAlt, FaClock, FaTicketAlt,
@@ -180,9 +180,19 @@ const AllEvents = () => {
   const [typeFilter, setTypeFilter] = useState('all');
   const [showFilters, setShowFilters] = useState(false);
 
+  const location = useLocation();
   const { data: eventsData, isLoading, error, refetch } = useGetEventsQuery({
     limit: 100, // Fetch more events to get today's events
   });
+
+  // ==================== SCROLL TO TOP ON PAGE LOAD ====================
+  useEffect(() => {
+    window.scrollTo({
+      top: 0,
+      left: 0,
+      behavior: 'smooth' // Use 'auto' for instant scroll, 'smooth' for animated
+    });
+  }, [location.pathname]); // Re-run when the pathname changes
 
   const events = eventsData?.events || [];
   

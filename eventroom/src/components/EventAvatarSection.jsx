@@ -1,5 +1,5 @@
 // components/EventAvatarSection.jsx – Avatar creation strip with brand colors
-import React from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import { 
@@ -9,14 +9,49 @@ import {
   FaCamera,
   FaUsers,
   FaUpload,
-  FaUserPlus
+  FaUserPlus,
+  FaChevronLeft,
+  FaChevronRight
 } from 'react-icons/fa';
 
 const EventAvatarSection = () => {
   const { userInfo } = useSelector((state) => state.auth);
+  const [currentSlide, setCurrentSlide] = useState(0);
+
+  // Array of avatar images
+  const avatarImages = [
+    '/avatar.jpg',
+    '/avatar1.jpg',
+    '/avatar2.jpg',
+    '/avatar3.jpg',
+    '/avatar4.jpg',
+    '/avatar5.jpg',
+    '/avatar6.jpg'
+  ];
 
   const getStartedLink = userInfo ? '/dashboard/events/new' : '/signup';
   const getStartedText = userInfo ? 'Create Your Badge' : 'Start Creating';
+
+  // Auto-slide functionality
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentSlide((prev) => (prev + 1) % avatarImages.length);
+    }, 4000); // Change slide every 4 seconds
+
+    return () => clearInterval(timer);
+  }, [avatarImages.length]);
+
+  const goToPrevious = useCallback(() => {
+    setCurrentSlide((prev) => (prev - 1 + avatarImages.length) % avatarImages.length);
+  }, [avatarImages.length]);
+
+  const goToNext = useCallback(() => {
+    setCurrentSlide((prev) => (prev + 1) % avatarImages.length);
+  }, [avatarImages.length]);
+
+  const goToSlide = useCallback((index) => {
+    setCurrentSlide(index);
+  }, []);
 
   return (
     <section className="relative w-full py-20 px-4 sm:px-6 lg:px-8 flex items-center overflow-hidden bg-[#0a1f44]">
@@ -86,23 +121,68 @@ const EventAvatarSection = () => {
           </p>
         </div>
 
-        {/* Right Column - Image */}
+        {/* Right Column - Slider */}
         <div className="flex justify-center lg:justify-end">
           <div className="relative w-full max-w-md">
             {/* Glow effect behind image */}
             <div className="absolute -inset-4 bg-cyan-500/20 rounded-2xl blur-3xl" />
             
-            {/* Image container */}
+            {/* Image container with slider */}
             <div className="relative rounded-2xl overflow-hidden shadow-2xl border border-white/10 bg-[#0a1f44]">
-              <img
-                src="/avatar.jpg"
-                alt="Event avatar examples"
-                className="w-full h-auto object-cover"
-                loading="lazy"
-              />
+              {/* Slides */}
+              <div 
+                className="flex transition-transform duration-700 ease-in-out"
+                style={{ transform: `translateX(-${currentSlide * 100}%)` }}
+              >
+                {avatarImages.map((image, index) => (
+                  <div key={index} className="min-w-full">
+                    <img
+                      src={image}
+                      alt={`Event avatar example ${index + 1}`}
+                      className="w-full h-auto object-cover"
+                      loading="lazy"
+                      onError={(e) => {
+                        e.target.src = '/avatar.jpg'; // Fallback to default if image fails to load
+                      }}
+                    />
+                  </div>
+                ))}
+              </div>
               
               {/* Gradient overlay */}
-              <div className="absolute inset-0 bg-gradient-to-t from-[#0a1f44]/60 via-transparent to-transparent" />
+              <div className="absolute inset-0 bg-gradient-to-t from-[#0a1f44]/60 via-transparent to-transparent pointer-events-none" />
+              
+              {/* Navigation Arrows */}
+              <button
+                onClick={goToPrevious}
+                className="absolute left-2 top-1/2 -translate-y-1/2 z-20 p-2 rounded-full bg-black/50 backdrop-blur-sm hover:bg-black/70 transition-all duration-200 border border-white/10 text-white hover:scale-110"
+                aria-label="Previous slide"
+              >
+                <FaChevronLeft className="text-sm" />
+              </button>
+              <button
+                onClick={goToNext}
+                className="absolute right-2 top-1/2 -translate-y-1/2 z-20 p-2 rounded-full bg-black/50 backdrop-blur-sm hover:bg-black/70 transition-all duration-200 border border-white/10 text-white hover:scale-110"
+                aria-label="Next slide"
+              >
+                <FaChevronRight className="text-sm" />
+              </button>
+
+              {/* Dots indicator */}
+              <div className="absolute bottom-16 left-1/2 -translate-x-1/2 z-20 flex gap-2">
+                {avatarImages.map((_, index) => (
+                  <button
+                    key={index}
+                    onClick={() => goToSlide(index)}
+                    className={`w-2 h-2 rounded-full transition-all duration-300 ${
+                      currentSlide === index 
+                        ? 'bg-cyan-400 w-6' 
+                        : 'bg-white/40 hover:bg-white/60'
+                    }`}
+                    aria-label={`Go to slide ${index + 1}`}
+                  />
+                ))}
+              </div>
               
               {/* Floating badge on image */}
               <div className="absolute bottom-4 left-4 right-4 bg-black/50 backdrop-blur-lg rounded-xl px-4 py-3 border border-white/10">
@@ -137,6 +217,13 @@ const EventAvatarSection = () => {
                 <span className="w-1.5 h-1.5 bg-green-400 rounded-full animate-pulse" />
                 <span className="text-white text-xs font-medium">Live</span>
               </div>
+            </div>
+
+            {/* Slide counter */}
+            <div className="absolute bottom-24 right-3 z-20 bg-black/60 backdrop-blur-sm rounded-lg px-2.5 py-1 border border-white/10">
+              <span className="text-white text-xs font-medium">
+                {currentSlide + 1} / {avatarImages.length}
+              </span>
             </div>
           </div>
         </div>

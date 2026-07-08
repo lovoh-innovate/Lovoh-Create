@@ -144,10 +144,10 @@ const EventHero = () => {
 
             {/* Buttons – conditional text based on auth */}
             <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 animate-fadeInUp animation-delay-400">
-              <button onClick={handleExploreEvents}
+              <Link to="/all-events"
                 className="bg-white hover:bg-gray-100 text-[#1B3766] px-6 sm:px-8 py-3 sm:py-3.5 rounded-xl font-semibold text-sm sm:text-base transition-all duration-300 transform hover:scale-105 shadow-lg w-full sm:w-auto">
                 Explore Events
-              </button>
+              </Link>
 
               {userInfo ? (
                 <button onClick={handleCreateEvent}

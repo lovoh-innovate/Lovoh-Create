@@ -65,7 +65,6 @@ const getTargetLogo = (pathname, sub) => {
 
 const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [isWhatWeDoOpen, setIsWhatWeDoOpen] = useState(false);
   const [isSubBrandsOpen, setIsSubBrandsOpen] = useState(false);
   const [currentLogo, setCurrentLogo] = useState("/logo.png");
   const [isTransitioning, setIsTransitioning] = useState(false);
@@ -73,16 +72,10 @@ const Header = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const whatWeDoRef = useRef(null);
   const subBrandsRef = useRef(null);
   const mobileMenuRef = useRef(null);
   const mobileMenuButtonRef = useRef(null);
   const navContainerRef = useRef(null);
-
-  const whatWeDoLinks = [
-    { name: "Our Works", path: "/work" },
-    { name: "Services", path: "/services" },
-  ];
 
   // Animate logo change based on path/subdomain
   useEffect(() => {
@@ -99,7 +92,6 @@ const Header = () => {
 
   const closeAllMenus = useCallback(() => {
     setIsMenuOpen(false);
-    setIsWhatWeDoOpen(false);
     setIsSubBrandsOpen(false);
   }, []);
 
@@ -130,9 +122,6 @@ const Header = () => {
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (window.innerWidth < 768) return;
-      if (whatWeDoRef.current && !whatWeDoRef.current.contains(event.target)) {
-        setIsWhatWeDoOpen(false);
-      }
       if (subBrandsRef.current && !subBrandsRef.current.contains(event.target)) {
         setIsSubBrandsOpen(false);
       }
@@ -172,13 +161,8 @@ const Header = () => {
     return () => document.removeEventListener("keydown", handleKeyDown);
   }, [isMenuOpen, closeAllMenus]);
 
-  const toggleWhatWeDo = () => setIsWhatWeDoOpen((prev) => !prev);
   const toggleSubBrands = () => setIsSubBrandsOpen((prev) => !prev);
   const toggleMobileMenu = () => setIsMenuOpen((prev) => !prev);
-  const toggleMobileWhatWeDo = (e) => {
-    e.stopPropagation();
-    setIsWhatWeDoOpen((prev) => !prev);
-  };
 
   // Grid icon (3x3 dots)
   const GridIcon = () => (
@@ -228,38 +212,18 @@ const Header = () => {
               >
                 About
               </button>
-
-              <div className="relative" ref={whatWeDoRef}>
-                <button
-                  onClick={toggleWhatWeDo}
-                  className="flex items-center text-gray-700 hover:text-blue-700 px-4 py-2 text-sm font-medium rounded-full transition-all duration-200 hover:bg-blue-50"
-                >
-                  What we do
-                  <svg
-                    className={`ml-1 w-4 h-4 transition-transform duration-200 ${
-                      isWhatWeDoOpen ? "rotate-180" : ""
-                    }`}
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                  </svg>
-                </button>
-                {isWhatWeDoOpen && (
-                  <div className="absolute top-full left-0 mt-3 w-56 bg-white rounded-3xl shadow-[0_20px_45px_rgba(0,0,0,0.10)] border border-blue-100 py-3 z-50">
-                    {whatWeDoLinks.map((item) => (
-                      <button
-                        key={item.name}
-                        onClick={() => handleNavigation(item.path)}
-                        className="block w-full text-left mx-2 px-4 py-3 rounded-2xl hover:bg-blue-50 transition-all duration-200 font-medium text-gray-900"
-                      >
-                        {item.name}
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
+              <button
+                onClick={() => handleNavigation("/work")}
+                className="text-gray-700 hover:text-blue-700 px-4 py-2 text-sm font-medium rounded-full transition-all duration-200 hover:bg-blue-50"
+              >
+                Our Works
+              </button>
+              <button
+                onClick={() => handleNavigation("/services")}
+                className="text-gray-700 hover:text-blue-700 px-4 py-2 text-sm font-medium rounded-full transition-all duration-200 hover:bg-blue-50"
+              >
+                Services
+              </button>
 
               {/* Sub‑brands grid button */}
               <div className="relative" ref={subBrandsRef}>
@@ -272,6 +236,10 @@ const Header = () => {
                 </button>
                 {isSubBrandsOpen && (
                   <div className="absolute top-full right-0 mt-3 w-64 bg-white rounded-3xl shadow-[0_20px_45px_rgba(0,0,0,0.10)] border border-blue-100 p-3 z-50">
+                    {/* Added "Our Brands" label here */}
+                    <p className="text-xs uppercase tracking-wider text-gray-400 font-semibold px-1 mb-3">
+                      Our Brands
+                    </p>
                     <div className="grid grid-cols-3 gap-3">
                       {SUB_BRANDS.map((brand) => (
                         <button
@@ -344,38 +312,18 @@ const Header = () => {
                     >
                       About
                     </button>
-
-                    <div className="rounded-xl overflow-hidden">
-                      <button
-                        onClick={toggleMobileWhatWeDo}
-                        className="flex items-center justify-between w-full text-gray-700 hover:text-blue-700 hover:bg-blue-50 px-4 py-3 rounded-xl text-base font-medium transition-all duration-200"
-                      >
-                        <span>What we do</span>
-                        <svg
-                          className={`w-4 h-4 transition-transform duration-200 ${
-                            isWhatWeDoOpen ? "rotate-180" : ""
-                          }`}
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                        </svg>
-                      </button>
-                      {isWhatWeDoOpen && (
-                        <div className="mt-1 space-y-1 pl-4">
-                          {whatWeDoLinks.map((item) => (
-                            <button
-                              key={item.name}
-                              onClick={() => handleNavigation(item.path)}
-                              className="w-full text-left bg-gray-50 hover:bg-blue-50 px-4 py-3 rounded-xl text-sm text-gray-700 hover:text-blue-700 transition-all duration-200 border border-gray-100"
-                            >
-                              <div className="font-medium">{item.name}</div>
-                            </button>
-                          ))}
-                        </div>
-                      )}
-                    </div>
+                    <button
+                      onClick={() => handleNavigation("/work")}
+                      className="w-full text-left text-gray-700 hover:text-blue-700 hover:bg-blue-50 px-4 py-3 rounded-xl text-base font-medium transition-all duration-200"
+                    >
+                      Our Works
+                    </button>
+                    <button
+                      onClick={() => handleNavigation("/services")}
+                      className="w-full text-left text-gray-700 hover:text-blue-700 hover:bg-blue-50 px-4 py-3 rounded-xl text-base font-medium transition-all duration-200"
+                    >
+                      Services
+                    </button>
 
                     {/* Mobile sub‑brands – shown as a grid inside the menu */}
                     <div className="pt-2 pb-1">
