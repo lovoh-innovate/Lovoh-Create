@@ -2,16 +2,46 @@ import jwt from 'jsonwebtoken';
 import asyncHandler from 'express-async-handler';
 import Admin from '../models/adminModel.js';
 
-const protectAdmin = asyncHandler(async (req, res, next) => {
-  let token;
-
-  if (req.headers.authorization && req.headers.authorization.startsWith('Bearer ')) {
-    token = req.headers.authorization.split(' ')[1];
-    console.log('Using Authorization header token');
-  } else if (req.cookies.jwt) {
-    token = req.cookies.jwt;
-    console.log('Using cookie token');
+// Extract token from request (cookie or header)
+const extractAdminToken = (req) => {
+  if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
+    return req.headers.authorization.split(' ')[1];
   }
+  if (req.cookies && req.cookies.jwt) {
+    return req.cookies.jwt;
+  }
+  if (req.cookies && req.cookies.admin_token) {
+    return req.cookies.admin_token;
+  }
+  return null;
+};
+
+// Set secure HTTP-only cookie for admin
+export const setAdminSecureCookie = (res, name, value, maxAge = 24 * 60 * 60 * 1000) => {
+  res.cookie(name, value, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'strict',
+    maxAge: maxAge,
+    path: '/',
+  });
+};
+
+// Clear admin cookie
+export const clearAdminCookie = (res, name) => {
+  res.cookie(name, '', {
+    httpOnly: true,
+    expires: new Date(0),
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'strict',
+    path: '/',
+  });
+};
+
+// @desc    Protect admin routes - Verify admin JWT token
+// @access  Private/Admin
+const protectAdmin = asyncHandler(async (req, res, next) => {
+  const token = extractAdminToken(req);
 
   if (!token) {
     res.status(401);

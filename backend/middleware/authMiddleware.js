@@ -3,20 +3,48 @@ import asyncHandler from 'express-async-handler';
 import User from '../models/userModel.js';
 import Admin from '../models/adminModel.js';
 
-// @desc    Protect routes - Verify JWT token (handles both admin & user tokens)
-const protect = asyncHandler(async (req, res, next) => {
-  let token;
-
-  // Check for user token first, then admin token
+// Extract token from request (cookie or header)
+const extractToken = (req) => {
+  if (req.cookies && req.cookies.token) {
+    return req.cookies.token;
+  }
   if (req.cookies && req.cookies.jwt_user) {
-    token = req.cookies.jwt_user;
-  } else if (req.cookies && req.cookies.jwt) {
-    token = req.cookies.jwt;
+    return req.cookies.jwt_user;
   }
-  // Check Authorization header
-  else if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
-    token = req.headers.authorization.split(' ')[1];
+  if (req.cookies && req.cookies.jwt) {
+    return req.cookies.jwt;
   }
+  if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
+    return req.headers.authorization.split(' ')[1];
+  }
+  return null;
+};
+
+// Set secure HTTP-only cookie
+export const setSecureCookie = (res, name, value, maxAge = 7 * 24 * 60 * 60 * 1000) => {
+  res.cookie(name, value, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'strict',
+    maxAge: maxAge,
+    path: '/',
+  });
+};
+
+// Clear cookie
+export const clearCookie = (res, name) => {
+  res.cookie(name, '', {
+    httpOnly: true,
+    expires: new Date(0),
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'strict',
+    path: '/',
+  });
+};
+
+// @desc    Protect routes - Verify JWT token (user only)
+const protect = asyncHandler(async (req, res, next) => {
+  const token = extractToken(req);
 
   if (!token) {
     res.status(401);
@@ -26,24 +54,19 @@ const protect = asyncHandler(async (req, res, next) => {
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-    // Handle both token types: user token has userId, admin token has adminId + userId
-    const userId = decoded.userId;
+    const userId = decoded.userId || decoded.id;
 
     if (!userId) {
       res.status(401);
       throw new Error('Not authorized, invalid token payload');
     }
 
-    // Get user from token
-    req.user = await User.findById(userId).select('-password');
+    req.user = await User.findById(userId).select('-password -otp -otpExpiry -resetPasswordOtp -resetPasswordExpiry -loginAttempts -lockUntil');
 
     if (!req.user) {
       res.status(401);
       throw new Error('User not found');
     }
-
-    // Optional: attach admin flag if present
-    req.isAdmin = !!decoded.adminId;
 
     next();
   } catch (error) {
@@ -52,17 +75,9 @@ const protect = asyncHandler(async (req, res, next) => {
   }
 });
 
-// Unified auth middleware
+// @desc    Protect routes - Verify JWT token (handles both admin & user tokens)
 const protectBoth = asyncHandler(async (req, res, next) => {
-  let token;
-
-  if (req.headers.authorization && req.headers.authorization.startsWith('Bearer ')) {
-    token = req.headers.authorization.split(' ')[1];
-  } else if (req.cookies.jwt_user) {
-    token = req.cookies.jwt_user;
-  } else if (req.cookies.jwt) {
-    token = req.cookies.jwt;
-  }
+  const token = extractToken(req);
 
   if (!token) {
     res.status(401);
@@ -72,8 +87,9 @@ const protectBoth = asyncHandler(async (req, res, next) => {
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-    if (decoded.userId) {
-      const user = await User.findById(decoded.userId).select('-password');
+    if (decoded.userId || decoded.id) {
+      const userId = decoded.userId || decoded.id;
+      const user = await User.findById(userId).select('-password -otp -otpExpiry -resetPasswordOtp -resetPasswordExpiry -loginAttempts -lockUntil');
       if (user) {
         req.user = user;
         req.user.role = 'user';
@@ -97,6 +113,5 @@ const protectBoth = asyncHandler(async (req, res, next) => {
     throw new Error('Not authorized, invalid token');
   }
 });
-
 
 export { protect, protectBoth };

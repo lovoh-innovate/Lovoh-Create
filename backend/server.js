@@ -28,12 +28,49 @@ import payoutRoutes from "./routes/payoutRoutes.js";
 import uduuaSettingsRoutes from "./routes/uduuaSettingsRoutes.js";
 import './cronJobs.js'; // Import cron jobs
 
+// Security imports
+import helmet from 'helmet';
+import { globalLimiter } from './middleware/securityMiddleware.js';
+
 dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 5000;
 const MONGO_URL = process.env.MONGO_URL;
 
+// ===== SECURITY HEADERS (Helmet) =====
+app.use(helmet());
+
+app.use(
+  helmet.contentSecurityPolicy({
+    directives: {
+      defaultSrc: ["'self'"],
+      styleSrc: ["'self'", "'unsafe-inline'", "https:", "http:"],
+      scriptSrc: ["'self'", "'unsafe-inline'", "https:", "http:"],
+      imgSrc: ["'self'", "data:", "blob:", "https:", "http:"],
+      fontSrc: ["'self'", "https:", "data:"],
+      connectSrc: ["'self'", "https:", "http:", "ws:", "wss:"],
+      mediaSrc: ["'self'", "https:", "http:"],
+      objectSrc: ["'none'"],
+      frameSrc: ["'self'"],
+      frameAncestors: ["'none'"],
+      baseUri: ["'self'"],
+      formAction: ["'self'"],
+      upgradeInsecureRequests: [],
+    },
+  })
+);
+
+app.use(
+  helmet.permittedCrossDomainPolicies({
+    permittedPolicies: "none",
+  })
+);
+
+// ===== RATE LIMITING =====
+app.use(globalLimiter);
+
+// ===== CORS =====
 app.use(cors({
     origin: [
         'http://localhost:3000',
@@ -60,7 +97,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 app.use(logger);
 
-// Health check - handles ALL methods including HEAD
+// Health check
 app.get("/", (req, res) => {
   res.status(200).json({
     success: true,
@@ -93,18 +130,14 @@ app.use("/api/search", searchRoutes);
 app.use("/api/payouts", payoutRoutes);
 app.use("/api/uduua-settings", uduuaSettingsRoutes);
 
+// Temp route
 app.get('/api/fix-admin-types', async (req, res) => {
   const Article = (await import('./models/articleModel.js')).default;
-  
-  // Update articles where author is a known admin name
   const result = await Article.updateMany(
     { authorType: { $ne: 'admin' } },
     { $set: { authorType: 'user' } }
   );
-  
-  // Get all articles to check
   const all = await Article.find({}).select('title author authorType createdBy').lean();
-  
   res.json({ 
     updated: result.modifiedCount,
     samples: all.slice(0, 10).map(a => ({
@@ -116,17 +149,18 @@ app.get('/api/fix-admin-types', async (req, res) => {
   });
 });
 
-// Middleware
+// Error handling
 app.use(notFound);
 app.use(errorHandler);
 
-// Connect to MongoDB and start server
+// Connect and start
 mongoose
 .connect(MONGO_URL)
 .then(()=> {
     console.log('MongoDB connected');
-
     app.listen(PORT, () => {
         console.log(`Server is running on port ${PORT}`);
     });
 });
+
+export default app;

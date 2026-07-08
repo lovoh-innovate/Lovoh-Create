@@ -1,4 +1,3 @@
-// routes/userRoutes.js
 import express from 'express';
 import { 
   postMessage, 
@@ -26,6 +25,7 @@ import {
   changePassword,
 } from '../controllers/userController.js';
 import { protect } from '../middleware/authMiddleware.js';
+import { authLimiter, apiLimiter } from '../middleware/securityMiddleware.js';
 
 import multer from "multer";
 import { v2 as cloudinary } from "cloudinary";
@@ -55,26 +55,28 @@ cloudinary.api
   .then(() => console.log("✅ Cloudinary connected successfully"))
   .catch((err) => console.error("❌ Cloudinary not connected:", err.message));
 
-// ==================== PUBLIC ROUTES ====================
+// ==================== PUBLIC AUTH ROUTES (Strict Rate Limiting) ====================
 
-// Auth routes
-router.post('/auth/google', googleAuth);
-router.post('/register', registerUser);           // sign up with email/password
-router.post('/verify-email', verifyEmail);        // verify OTP
-router.post('/resend-otp', resendOTP);            // resend OTP
-router.post('/login', loginUser);                 // email/password login
+// Auth routes — max 5 attempts per 15 minutes
+router.post('/auth/google', authLimiter, googleAuth);
+router.post('/register', authLimiter, registerUser);
+router.post('/verify-email', authLimiter, verifyEmail);
+router.post('/resend-otp', authLimiter, resendOTP);
+router.post('/login', authLimiter, loginUser);
 
-// Password reset routes
-router.post('/forgot-password', forgotPassword);
-router.post('/reset-password', resetPassword);
+// Password reset routes — max 5 attempts per 15 minutes
+router.post('/forgot-password', authLimiter, forgotPassword);
+router.post('/reset-password', authLimiter, resetPassword);
+
+// ==================== PUBLIC NON-AUTH ROUTES ====================
 
 // Contact route
 router.post('/contact', postMessage);
 
 // Public profile routes
-router.get('/profile/:id', getProfileById);                    // Get profile by ID
-router.get('/profile/username/:username', getProfileByUsername); // Get profile by username
-router.get('/profile/:id/posts', getUserPosts);                // Get user posts
+router.get('/profile/:id', getProfileById);
+router.get('/profile/username/:username', getProfileByUsername);
+router.get('/profile/:id/posts', getUserPosts);
 
 // Followers/Following routes (public view)
 router.get('/followers/:id', getFollowers);
@@ -87,7 +89,7 @@ router.get('/profile', protect, getProfileInfo);
 router.put('/profile', protect, upload.single('profile'), updateProfile);
 router.delete('/profile', protect, deleteAccount);
 
-// Password change route (for settings page)
+// Password change route
 router.put('/change-password', protect, changePassword);
 
 // Follow/Unfollow routes

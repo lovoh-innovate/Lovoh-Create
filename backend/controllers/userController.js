@@ -1,4 +1,3 @@
-// controllers/userController.js
 import express from "express";
 import mongoose from "mongoose";
 import userMessage from "../models/userMessageModel.js";
@@ -17,6 +16,53 @@ import Video from "../models/videoModel.js";
 import EventRegistration from "../models/eventRegistrationModel.js";
 
 const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+
+// ===== SECURITY HELPERS =====
+
+// Secure cookie settings helper
+const setSecureCookie = (res, name, value, maxAge = 7 * 24 * 60 * 60 * 1000) => {
+  res.cookie(name, value, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'strict',
+    maxAge: maxAge,
+    path: '/',
+  });
+};
+
+// Clear cookie helper
+const clearCookie = (res, name) => {
+  res.cookie(name, '', {
+    httpOnly: true,
+    expires: new Date(0),
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'strict',
+    path: '/',
+  });
+};
+
+// Sanitize user object — NEVER expose password or sensitive fields
+const sanitizeUser = (user) => ({
+  _id: user._id,
+  name: user.name,
+  username: user.username,
+  email: user.email,
+  phone: user.phone,
+  profile: user.profile,
+  bio: user.bio,
+  authMethod: user.authMethod,
+  followersCount: user.followersCount,
+  followingCount: user.followingCount,
+  isVerified: user.isVerified,
+  role: user.role,
+  createdAt: user.createdAt,
+});
+
+// Input sanitization helper
+const sanitizeInput = (input) => {
+  if (typeof input !== 'string') return input;
+  return input.trim().replace(/[<>]/g, '');
+};
 
 const getUserInfoFromAccessToken = async (accessToken) => {
   const response = await fetch(
@@ -107,9 +153,9 @@ const googleAuth = asyncHandler(async (req, res) => {
 
     user = await User.create({
       googleId,
-      name: name || "",
+      name: sanitizeInput(name) || "",
       username,
-      email,
+      email: email.toLowerCase().trim(),
       phone: cleanedPhone,
       profile: picture || "",
       password: `google-auth-${googleId}`,
@@ -142,7 +188,7 @@ const googleAuth = asyncHandler(async (req, res) => {
     }
 
     if (!user.name && name) {
-      user.name = name;
+      user.name = sanitizeInput(name);
     }
 
     user.isVerified = true;
@@ -153,14 +199,12 @@ const googleAuth = asyncHandler(async (req, res) => {
   }
 
   const token = generateUserToken(res, user._id);
+  
+  // Set secure HTTP-only cookie
+  setSecureCookie(res, 'token', token);
 
   res.status(200).json({
-    _id: user._id,
-    name: user.name,
-    email: user.email,
-    phone: user.phone,
-    profile: user.profile,
-    authMethod: user.authMethod,
+    ...sanitizeUser(user),
     token,
   });
 });
@@ -180,12 +224,38 @@ const registerUser = asyncHandler(async (req, res) => {
     throw new Error("Name, username, email, and password are required");
   }
 
+  // Input sanitization
+  const cleanName = sanitizeInput(name);
+  const cleanUsername = sanitizeInput(username).toLowerCase();
+  const cleanEmail = sanitizeInput(email).toLowerCase();
+  const cleanPhone = phone ? sanitizeInput(phone) : "";
+
+  // Validate email format
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(cleanEmail)) {
+    res.status(400);
+    throw new Error("Please provide a valid email address");
+  }
+
+  // Validate username format (alphanumeric, underscores, 3-30 chars)
+  const usernameRegex = /^[a-z0-9_]{3,30}$/;
+  if (!usernameRegex.test(cleanUsername)) {
+    res.status(400);
+    throw new Error("Username must be 3-30 characters, lowercase letters, numbers, and underscores only");
+  }
+
+  // Validate password strength
+  if (password.length < 6) {
+    res.status(400);
+    throw new Error("Password must be at least 6 characters");
+  }
+
   // Get security settings
   const settings = await UduuaSettings.findOne();
   const REQUIRE_EMAIL_VERIFICATION = settings?.security?.requireEmailVerification ?? true;
   const OTP_EXPIRY_MINUTES = settings?.security?.otpExpiryMinutes || 10;
 
-  const existingUser = await User.findOne({ $or: [{ email }, { username }] });
+  const existingUser = await User.findOne({ $or: [{ email: cleanEmail }, { username: cleanUsername }] });
 
   if (existingUser) {
     if (existingUser.isVerified) {
@@ -195,10 +265,10 @@ const registerUser = asyncHandler(async (req, res) => {
       );
     }
 
-    existingUser.name = name;
-    existingUser.username = username;
+    existingUser.name = cleanName;
+    existingUser.username = cleanUsername;
     existingUser.password = password;
-    existingUser.phone = phone || "";
+    existingUser.phone = cleanPhone;
     existingUser.otp = generateOTP();
     existingUser.otpExpiry = new Date(Date.now() + OTP_EXPIRY_MINUTES * 60 * 1000);
     await existingUser.save();
@@ -221,11 +291,11 @@ const registerUser = asyncHandler(async (req, res) => {
   const otpExpiry = new Date(Date.now() + OTP_EXPIRY_MINUTES * 60 * 1000);
 
   const user = await User.create({
-    name,
-    username,
-    email,
+    name: cleanName,
+    username: cleanUsername,
+    email: cleanEmail,
     password,
-    phone: phone || "",
+    phone: cleanPhone,
     isVerified: !REQUIRE_EMAIL_VERIFICATION,
     authMethod: "email",
     otp: REQUIRE_EMAIL_VERIFICATION ? otp : undefined,
@@ -252,7 +322,9 @@ const registerUser = asyncHandler(async (req, res) => {
 const verifyEmail = asyncHandler(async (req, res) => {
   const { email, otp } = req.body;
 
-  const user = await User.findOne({ email });
+  const cleanEmail = sanitizeInput(email).toLowerCase();
+
+  const user = await User.findOne({ email: cleanEmail });
   if (!user) {
     res.status(404);
     throw new Error("User not found");
@@ -284,15 +356,12 @@ const verifyEmail = asyncHandler(async (req, res) => {
   await user.save();
 
   const token = generateUserToken(res, user._id);
+  
+  // Set secure HTTP-only cookie
+  setSecureCookie(res, 'token', token);
 
   res.status(200).json({
-    _id: user._id,
-    name: user.name,
-    username: user.username,
-    email: user.email,
-    phone: user.phone,
-    profile: user.profile,
-    authMethod: user.authMethod,
+    ...sanitizeUser(user),
     token,
   });
 });
@@ -303,10 +372,12 @@ const verifyEmail = asyncHandler(async (req, res) => {
 const resendOTP = asyncHandler(async (req, res) => {
   const { email } = req.body;
 
+  const cleanEmail = sanitizeInput(email).toLowerCase();
+
   const settings = await UduuaSettings.findOne();
   const OTP_EXPIRY_MINUTES = settings?.security?.otpExpiryMinutes || 10;
 
-  const user = await User.findOne({ email });
+  const user = await User.findOne({ email: cleanEmail });
   if (!user) {
     res.status(404);
     throw new Error("User not found");
@@ -343,12 +414,14 @@ const loginUser = asyncHandler(async (req, res) => {
     throw new Error("Email and password are required");
   }
 
+  const cleanEmail = sanitizeInput(email).toLowerCase();
+
   // Get security settings
   const settings = await UduuaSettings.findOne();
   const MAX_LOGIN_ATTEMPTS = settings?.security?.maxLoginAttempts || 5;
   const LOCKOUT_MINUTES = settings?.security?.lockoutMinutes || 30;
 
-  const user = await User.findOne({ email });
+  const user = await User.findOne({ email: cleanEmail });
   
   if (!user) {
     res.status(401);
@@ -402,15 +475,12 @@ const loginUser = asyncHandler(async (req, res) => {
   await user.save();
 
   const token = generateUserToken(res, user._id);
+  
+  // Set secure HTTP-only cookie
+  setSecureCookie(res, 'token', token);
 
   res.status(200).json({
-    _id: user._id,
-    name: user.name,
-    username: user.username,
-    email: user.email,
-    phone: user.phone,
-    profile: user.profile,
-    authMethod: user.authMethod,
+    ...sanitizeUser(user),
     token,
   });
 });
@@ -462,6 +532,9 @@ const changePassword = asyncHandler(async (req, res) => {
   user.passwordChangedAt = new Date();
   await user.save();
 
+  // Clear all sessions by clearing the cookie
+  clearCookie(res, 'token');
+
   res.status(200).json({
     message: "Password changed successfully. Please log in again.",
   });
@@ -482,12 +555,19 @@ const updateProfile = asyncHandler(async (req, res) => {
 
   // Update name
   if (name !== undefined && name.trim() !== "") {
-    user.name = name.trim();
+    user.name = sanitizeInput(name);
   }
 
   // Update username (with uniqueness check)
   if (username !== undefined && username.trim() !== "") {
-    const trimmedUsername = username.trim();
+    const trimmedUsername = sanitizeInput(username).toLowerCase();
+    
+    // Validate username format
+    const usernameRegex = /^[a-z0-9_]{3,30}$/;
+    if (!usernameRegex.test(trimmedUsername)) {
+      res.status(400);
+      throw new Error("Username must be 3-30 characters, lowercase letters, numbers, and underscores only");
+    }
 
     const existingUser = await User.findOne({
       username: trimmedUsername,
@@ -504,7 +584,7 @@ const updateProfile = asyncHandler(async (req, res) => {
 
   // Update phone number (with uniqueness check)
   if (phone !== undefined && phone.trim() !== "") {
-    const trimmedPhone = phone.trim();
+    const trimmedPhone = sanitizeInput(phone);
 
     const existingUser = await User.findOne({
       phone: trimmedPhone,
@@ -521,7 +601,7 @@ const updateProfile = asyncHandler(async (req, res) => {
 
   // Update bio
   if (bio !== undefined) {
-    user.bio = bio.trim() || "";
+    user.bio = sanitizeInput(bio) || "";
   }
 
   // Update profile picture if file uploaded
@@ -543,14 +623,7 @@ const updateProfile = asyncHandler(async (req, res) => {
   const updatedUser = await user.save();
 
   res.status(200).json({
-    _id: updatedUser._id,
-    name: updatedUser.name,
-    username: updatedUser.username,
-    email: updatedUser.email,
-    phone: updatedUser.phone,
-    bio: updatedUser.bio,
-    profile: updatedUser.profile,
-    authMethod: updatedUser.authMethod,
+    ...sanitizeUser(updatedUser),
     message: "Profile updated successfully",
   });
 });
@@ -560,7 +633,7 @@ const updateProfile = asyncHandler(async (req, res) => {
 // @access  Private
 const getProfileInfo = asyncHandler(async (req, res) => {
   const user = await User.findById(req.user._id)
-    .select("-password")
+    .select("-password -otp -otpExpiry -resetPasswordOtp -resetPasswordExpiry -loginAttempts -lockUntil")
     .populate("followers", "name username profile")
     .populate("following", "name username profile")
     .populate(
@@ -587,7 +660,7 @@ const getProfileInfo = asyncHandler(async (req, res) => {
 // @access  Public
 const getProfileById = asyncHandler(async (req, res) => {
   const user = await User.findById(req.params.id)
-    .select("-password -email -phone")
+    .select("-password -email -phone -otp -otpExpiry -resetPasswordOtp -resetPasswordExpiry -loginAttempts -lockUntil")
     .populate("followers", "name username profile")
     .populate("following", "name username profile");
 
@@ -771,12 +844,8 @@ const getUserSuggestions = asyncHandler(async (req, res) => {
 // @route   POST /api/users/logout
 // @access  Private
 const logout = asyncHandler(async (req, res) => {
-  res.cookie("jwt", "", {
-    httpOnly: true,
-    expires: new Date(0),
-    secure: process.env.NODE_ENV !== "development",
-    sameSite: "None",
-  });
+  clearCookie(res, 'token');
+  clearCookie(res, 'jwt');
 
   res.status(200).json({ message: "Logged out successfully" });
 });
@@ -826,13 +895,9 @@ const deleteAccount = asyncHandler(async (req, res) => {
   // Delete the user
   await User.deleteOne({ _id: req.user._id });
 
-  // Clear cookie
-  res.cookie("jwt", "", {
-    httpOnly: true,
-    expires: new Date(0),
-    secure: process.env.NODE_ENV !== "development",
-    sameSite: "None",
-  });
+  // Clear all cookies
+  clearCookie(res, 'token');
+  clearCookie(res, 'jwt');
 
   res.status(200).json({ message: "Account deleted successfully" });
 });
@@ -845,11 +910,24 @@ const postMessage = asyncHandler(async (req, res) => {
     throw new Error("Input all Fields");
   }
 
+  // Sanitize inputs
+  const cleanName = sanitizeInput(name);
+  const cleanEmail = sanitizeInput(email).toLowerCase();
+  const cleanSubject = sanitizeInput(subject);
+  const cleanMessage = sanitizeInput(message);
+
+  // Validate email
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(cleanEmail)) {
+    res.status(400);
+    throw new Error("Please provide a valid email address");
+  }
+
   const messages = await userMessage.create({
-    name,
-    email,
-    subject,
-    message,
+    name: cleanName,
+    email: cleanEmail,
+    subject: cleanSubject,
+    message: cleanMessage,
   });
 
   res.status(201).json(messages);
@@ -866,11 +944,13 @@ const forgotPassword = asyncHandler(async (req, res) => {
     throw new Error("Email is required");
   }
 
+  const cleanEmail = sanitizeInput(email).toLowerCase();
+
   // Get security settings
   const settings = await UduuaSettings.findOne();
   const RESET_TOKEN_EXPIRY = settings?.security?.resetTokenExpiry || 10; // minutes
 
-  const user = await User.findOne({ email });
+  const user = await User.findOne({ email: cleanEmail });
 
   if (!user) {
     return res
@@ -909,6 +989,8 @@ const resetPassword = asyncHandler(async (req, res) => {
     throw new Error("Email, OTP, and new password are required");
   }
 
+  const cleanEmail = sanitizeInput(email).toLowerCase();
+
   // Get security settings
   const settings = await UduuaSettings.findOne();
   const MIN_PASSWORD_LENGTH = settings?.security?.minPasswordLength || 6;
@@ -918,7 +1000,7 @@ const resetPassword = asyncHandler(async (req, res) => {
     throw new Error(`Password must be at least ${MIN_PASSWORD_LENGTH} characters`);
   }
 
-  const user = await User.findOne({ email });
+  const user = await User.findOne({ email: cleanEmail });
   if (!user) {
     res.status(404);
     throw new Error("User not found");
@@ -939,6 +1021,10 @@ const resetPassword = asyncHandler(async (req, res) => {
   user.resetPasswordExpiry = undefined;
   user.passwordChangedAt = new Date();
   await user.save();
+
+  // Clear any existing sessions
+  clearCookie(res, 'token');
+  clearCookie(res, 'jwt');
 
   res
     .status(200)
@@ -1064,7 +1150,7 @@ const getUserPosts = asyncHandler(async (req, res) => {
 // @access  Public
 const getProfileByUsername = asyncHandler(async (req, res) => {
   const user = await User.findOne({ username: req.params.username })
-    .select("-password -email -phone")
+    .select("-password -email -phone -otp -otpExpiry -resetPasswordOtp -resetPasswordExpiry -loginAttempts -lockUntil")
     .populate("followers", "name username profile")
     .populate("following", "name username profile");
 
