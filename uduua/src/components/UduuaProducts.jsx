@@ -1,4 +1,4 @@
-// components/UduuaProducts.jsx
+// components/UduuaProducts.jsx - Properly sized and spaced buttons
 import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { 
@@ -13,6 +13,7 @@ import {
   FaTruck,
   FaCheckCircle,
   FaPercentage,
+  FaHeart,
 } from 'react-icons/fa';
 import { useGetProductsQuery, useSearchProductsQuery, useGetCategoriesQuery } from '../slices/productApiSlice';
 import { useAddToCartMutation, useGetCartSummaryQuery } from '../slices/orderApiSlice';
@@ -252,9 +253,10 @@ const UduuaProducts = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 pt-2 pb-16">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex gap-6">
-          <div className="hidden lg:block w-64 shrink-0">
+      <div className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-8">
+        <div className="flex gap-4 lg:gap-6">
+          {/* Sidebar - Hidden on mobile */}
+          <div className="hidden lg:block w-56 xl:w-64 shrink-0">
             <div className="sticky top-28">
               <ShopSidebar 
                 selectedCategory={selectedCategory}
@@ -266,14 +268,14 @@ const UduuaProducts = () => {
           </div>
 
           <div className="flex-1 min-w-0">
-            {/* Results Header */}
-            <div className="sticky top-14 sm:top-28 z-20 bg-gray-50 pb-4">
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-white p-4 rounded-lg border border-gray-200">
-                <div className="flex items-center gap-2">
+            {/* Results Header - Mobile optimized */}
+            <div className="sticky top-14 sm:top-28 z-20 bg-gray-50 pb-3 sm:pb-4">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-4 bg-white p-3 sm:p-4 rounded-lg border border-gray-200">
+                <div className="flex items-center gap-2 text-xs sm:text-sm">
                   {isFetching && products.length > 0 ? (
-                    <FaSpinner className="animate-spin text-[#0043FC] text-sm" />
+                    <FaSpinner className="animate-spin text-[#0043FC] text-xs sm:text-sm" />
                   ) : (
-                    <span className="text-sm text-gray-500">
+                    <span className="text-gray-500 truncate">
                       {totalProducts > 0 ? (
                         <>
                           <span className="font-semibold text-gray-900">{indexOfFirstProduct} - {indexOfLastProduct}</span>
@@ -281,7 +283,7 @@ const UduuaProducts = () => {
                           <span className="font-semibold text-gray-900">{totalProducts.toLocaleString()}</span>
                           {' '}product{totalProducts !== 1 ? 's' : ''}
                           {searchTerm && (
-                            <span className="text-[#0043FC]"> matching "{searchTerm}"</span>
+                            <span className="text-[#0043FC] hidden xs:inline"> matching "{searchTerm}"</span>
                           )}
                         </>
                       ) : (
@@ -291,12 +293,12 @@ const UduuaProducts = () => {
                   )}
                 </div>
 
-                <div className="flex items-center gap-3">
-                  <div className="relative">
+                <div className="flex items-center gap-2 sm:gap-3">
+                  <div className="relative flex-1 sm:flex-none">
                     <select 
                       value={sortBy}
                       onChange={(e) => setSortBy(e.target.value)}
-                      className="appearance-none h-9 pl-3 pr-8 border border-gray-200 rounded-md text-sm text-gray-700 bg-white focus:outline-none focus:border-[#0043FC] focus:ring-1 focus:ring-[#0043FC] cursor-pointer"
+                      className="appearance-none h-8 sm:h-9 pl-2 pr-6 sm:pl-3 sm:pr-8 border border-gray-200 rounded-md text-xs sm:text-sm text-gray-700 bg-white focus:outline-none focus:border-[#0043FC] focus:ring-1 focus:ring-[#0043FC] cursor-pointer w-full sm:w-auto"
                     >
                       <option value="bestmatch">Best Match</option>
                       <option value="price_asc">Price: Low to High</option>
@@ -304,64 +306,70 @@ const UduuaProducts = () => {
                       <option value="newest">Newest First</option>
                       <option value="popular">Most Popular</option>
                     </select>
-                    <FaTimes className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 text-xs pointer-events-none rotate-90" />
+                    <FaTimes className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 text-[10px] pointer-events-none rotate-90" />
                   </div>
 
-                  <div className="flex items-center border border-gray-200 rounded-md overflow-hidden">
-                    <button onClick={() => setViewMode('grid')} className={`p-2 transition-colors ${viewMode === 'grid' ? 'bg-[#0043FC] text-white' : 'bg-white text-gray-600 hover:bg-gray-50'}`}>
-                      <FaThLarge className="text-sm" />
+                  <div className="flex items-center border border-gray-200 rounded-md overflow-hidden shrink-0">
+                    <button 
+                      onClick={() => setViewMode('grid')} 
+                      className={`p-1.5 sm:p-2 transition-colors ${viewMode === 'grid' ? 'bg-[#0043FC] text-white' : 'bg-white text-gray-600 hover:bg-gray-50'}`}
+                    >
+                      <FaThLarge className="text-xs sm:text-sm" />
                     </button>
-                    <button onClick={() => setViewMode('list')} className={`p-2 transition-colors ${viewMode === 'list' ? 'bg-[#0043FC] text-white' : 'bg-white text-gray-600 hover:bg-gray-50'}`}>
-                      <FaList className="text-sm" />
+                    <button 
+                      onClick={() => setViewMode('list')} 
+                      className={`p-1.5 sm:p-2 transition-colors ${viewMode === 'list' ? 'bg-[#0043FC] text-white' : 'bg-white text-gray-600 hover:bg-gray-50'}`}
+                    >
+                      <FaList className="text-xs sm:text-sm" />
                     </button>
                   </div>
                 </div>
               </div>
             </div>
 
-            {/* Active Filter Tags */}
+            {/* Active Filter Tags - Mobile optimized */}
             {(searchTerm || selectedCategory) && (
-              <div className="flex flex-wrap items-center gap-2 mb-4">
+              <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 mb-3 sm:mb-4">
                 {searchTerm && (
-                  <span className="inline-flex items-center gap-2 px-3 py-1.5 bg-gray-100 rounded-full text-xs text-gray-700">
+                  <span className="inline-flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1 bg-gray-100 rounded-full text-[10px] sm:text-xs text-gray-700">
                     Search: {searchTerm}
-                    <button onClick={() => setSearchTerm('')} className="w-4 h-4 flex items-center justify-center rounded-full bg-gray-300 text-gray-600 hover:bg-red-500 hover:text-white transition-colors">
-                      <FaTimes className="text-[10px]" />
+                    <button onClick={() => setSearchTerm('')} className="w-3 h-3 sm:w-4 sm:h-4 flex items-center justify-center rounded-full bg-gray-300 text-gray-600 hover:bg-red-500 hover:text-white transition-colors">
+                      <FaTimes className="text-[8px] sm:text-[10px]" />
                     </button>
                   </span>
                 )}
                 {selectedCategory && (
-                  <span className="inline-flex items-center gap-2 px-3 py-1.5 bg-[#0043FC]/10 rounded-full text-xs text-[#0043FC]">
+                  <span className="inline-flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1 bg-[#0043FC]/10 rounded-full text-[10px] sm:text-xs text-[#0043FC]">
                     Category: {selectedCategory}
-                    <button onClick={() => setSelectedCategory('')} className="w-4 h-4 flex items-center justify-center rounded-full bg-[#0043FC]/20 text-[#0043FC] hover:bg-red-500 hover:text-white transition-colors">
-                      <FaTimes className="text-[10px]" />
+                    <button onClick={() => setSelectedCategory('')} className="w-3 h-3 sm:w-4 sm:h-4 flex items-center justify-center rounded-full bg-[#0043FC]/20 text-[#0043FC] hover:bg-red-500 hover:text-white transition-colors">
+                      <FaTimes className="text-[8px] sm:text-[10px]" />
                     </button>
                   </span>
                 )}
-                <button onClick={clearFilters} className="text-xs text-[#0043FC] hover:text-[#0033cc] font-medium ml-2">Clear All</button>
+                <button onClick={clearFilters} className="text-[10px] sm:text-xs text-[#0043FC] hover:text-[#0033cc] font-medium ml-1 sm:ml-2">Clear All</button>
               </div>
             )}
 
             {/* Products Display */}
             <div>
               {products.length === 0 ? (
-                <div className="text-center py-16 bg-white rounded-lg border border-gray-200">
-                  <div className="w-20 h-20 mx-auto mb-4 bg-gray-100 rounded-full flex items-center justify-center">
-                    <span className="text-3xl text-gray-400">🔍</span>
+                <div className="text-center py-12 sm:py-16 bg-white rounded-lg border border-gray-200">
+                  <div className="w-16 h-16 sm:w-20 sm:h-20 mx-auto mb-3 sm:mb-4 bg-gray-100 rounded-full flex items-center justify-center">
+                    <span className="text-2xl sm:text-3xl text-gray-400">🔍</span>
                   </div>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-2">No products found</h3>
-                  <p className="text-sm text-gray-500 mb-6">
+                  <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-1 sm:mb-2">No products found</h3>
+                  <p className="text-xs sm:text-sm text-gray-500 mb-4 sm:mb-6">
                     {searchTerm ? `No products match "${searchTerm}"` : 'Try adjusting your search or filters'}
                   </p>
-                  <button onClick={clearFilters} className="px-6 py-2.5 bg-[#0043FC] hover:bg-[#0033cc] text-white rounded-md text-sm font-medium transition-colors">
+                  <button onClick={clearFilters} className="px-4 sm:px-6 py-2 sm:py-2.5 bg-[#0043FC] hover:bg-[#0033cc] text-white rounded-md text-xs sm:text-sm font-medium transition-colors">
                     Clear Filters
                   </button>
                 </div>
               ) : (
                 <>
-                  {/* Grid View */}
+                  {/* Grid View - Smaller cards, more per row on desktop */}
                   {viewMode === 'grid' && (
-                    <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4">
+                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-2 sm:gap-3 lg:gap-3">
                       {products.map((product) => {
                         const statusStyle = getStatusBadge(product.status);
                         const deliveryBadge = getDeliveryBadge(product);
@@ -376,100 +384,116 @@ const UduuaProducts = () => {
                           <div
                             key={product._id}
                             onClick={() => handleProductClick(product._id)}
-                            className="group bg-white rounded-lg overflow-hidden border border-gray-200 hover:shadow-md transition-all duration-300 cursor-pointer relative"
+                            className="group bg-white rounded-lg overflow-hidden border border-gray-200 hover:shadow-md transition-all duration-300 cursor-pointer flex flex-col"
                           >
-                            <div className="relative aspect-square overflow-hidden bg-gray-50">
+                            <div className="relative aspect-square overflow-hidden bg-gray-50 flex-shrink-0">
                               <img
                                 src={productImage}
                                 alt={product.name}
                                 className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                                 onError={(e) => { e.target.src = "/placeholder-product.jpg"; }}
                               />
-                              <div className={`absolute top-2 left-2 ${statusStyle.bg} text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full z-10`}>
+                              <div className={`absolute top-0.5 left-0.5 sm:top-1 sm:left-1 ${statusStyle.bg} text-white text-[6px] sm:text-[8px] font-bold px-0.5 sm:px-1 py-0.5 rounded-full z-10`}>
                                 {statusStyle.text}
                               </div>
                               {hasDiscount && (
-                                <div className="absolute top-2 right-2 bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full z-10 flex items-center gap-0.5">
-                                  <FaPercentage className="text-[8px]" />
+                                <div className="absolute top-0.5 right-0.5 sm:top-1 sm:right-1 bg-red-500 text-white text-[6px] sm:text-[8px] font-bold px-0.5 sm:px-1 py-0.5 rounded-full z-10 flex items-center gap-0.5">
+                                  <FaPercentage className="text-[4px] sm:text-[6px]" />
                                   {product.discount}% OFF
                                 </div>
                               )}
                               {!stockStatus.available && (
                                 <div className="absolute inset-0 bg-black/60 flex items-center justify-center z-10">
-                                  <span className="text-white font-bold text-sm px-2 py-1 bg-red-500 rounded-lg">Sold Out</span>
+                                  <span className="text-white font-bold text-[8px] sm:text-[10px] px-1 sm:px-1.5 py-0.5 bg-red-500 rounded-lg">Sold Out</span>
                                 </div>
                               )}
                             </div>
                             
-                            <div className="p-3">
-                              <div className="flex items-center gap-1 mb-0.5">
-                                <FaStore className="text-gray-400 text-[8px]" />
-                                <span className="text-[10px] text-gray-500 font-bold uppercase tracking-wide truncate">
+                            <div className="p-1.5 sm:p-2 flex flex-col flex-1">
+                              <div className="flex items-center gap-0.5 mb-0.5">
+                                <FaStore className="text-gray-400 text-[6px] sm:text-[7px] flex-shrink-0" />
+                                <span className="text-[7px] sm:text-[8px] text-gray-500 font-bold uppercase tracking-wide truncate">
                                   {product.brandName || "GENERIC"}
                                 </span>
                               </div>
-                              <div className="flex items-center gap-1 mb-1">
-                                <FaTag className="text-[#0043FC] text-[8px]" />
-                                <span className="text-[10px] text-gray-400 truncate">
+                              <div className="flex items-center gap-0.5 mb-0.5">
+                                <FaTag className="text-[#0043FC] text-[6px] sm:text-[7px] flex-shrink-0" />
+                                <span className="text-[7px] sm:text-[8px] text-gray-400 truncate">
                                   {Array.isArray(product.category) ? product.category[0] : product.category || "General"}
                                 </span>
                               </div>
-                              <h3 className="font-semibold text-gray-900 text-xs mb-1 line-clamp-2 min-h-[32px]">
+                              <h3 className="font-semibold text-gray-900 text-[10px] sm:text-xs leading-tight mb-0.5 line-clamp-2 min-h-[24px] sm:min-h-[28px]">
                                 {product.name}
                               </h3>
-                              <div className="flex items-center gap-0.5 mb-2">
+                              <div className="flex items-center gap-0.5 mb-0.5 sm:mb-1">
                                 {[...Array(5)].map((_, i) => (
                                   <FaStar 
                                     key={i}
-                                    className={`text-[8px] ${i < Math.floor(product.rating || 4) ? 'text-yellow-400' : 'text-gray-300'}`}
+                                    className={`text-[6px] sm:text-[7px] ${i < Math.floor(product.rating || 4) ? 'text-yellow-400' : 'text-gray-300'}`}
                                   />
                                 ))}
                               </div>
-                              <div className="mb-2">
+                              <div className="mb-0.5 sm:mb-1">
                                 {hasDiscount ? (
-                                  <div className="flex items-center gap-1.5">
-                                    <span className="text-sm font-bold text-[#0043FC]">
+                                  <div className="flex items-center gap-0.5 sm:gap-1 flex-wrap">
+                                    <span className="text-[10px] sm:text-xs font-bold text-[#0043FC]">
                                       {formatPrice(productPrice)}
                                     </span>
-                                    <span className="text-[10px] text-gray-400 line-through">
+                                    <span className="text-[7px] sm:text-[8px] text-gray-400 line-through">
                                       {formatPrice(originalPrice)}
                                     </span>
                                   </div>
                                 ) : (
-                                  <span className="text-sm font-bold text-[#0043FC]">
+                                  <span className="text-[10px] sm:text-xs font-bold text-[#0043FC]">
                                     {formatPrice(productPrice)}
                                   </span>
                                 )}
                               </div>
-                              <div className={`inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-white text-[8px] font-medium mb-2 ${deliveryBadge.color}`}>
-                                <FaTruck className="text-[6px]" />
-                                {deliveryBadge.text}
+                              <div className={`inline-flex items-center gap-0.5 px-0.5 sm:px-1 py-0.5 rounded-full text-white text-[6px] sm:text-[7px] font-medium mb-1 sm:mb-1.5 ${deliveryBadge.color} w-fit`}>
+                                <FaTruck className="text-[4px] sm:text-[5px]" />
+                                <span className="hidden xs:inline">{deliveryBadge.text}</span>
+                                <span className="xs:hidden">{deliveryBadge.text === 'Pay on Delivery' ? 'POD' : 'Pay Online'}</span>
                               </div>
-                              <div className="flex items-center gap-1.5">
-                                {stockStatus.available && (
+                              
+                              {/* Buttons - Proper size with spacing */}
+                              <div className="flex items-center gap-1.5 sm:gap-2 mt-auto">
+                                {stockStatus.available ? (
+                                  <>
+                                    <button 
+                                      onClick={(e) => handleAddToCart(e, product)}
+                                      disabled={isAddingThisProduct}
+                                      className="flex-1 h-7 sm:h-8 rounded-md bg-[#0043FC]/10 text-[#0043FC] hover:bg-[#0043FC]/20 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-[8px] sm:text-[10px] font-medium flex items-center justify-center gap-1 whitespace-nowrap"
+                                    >
+                                      {isAddingThisProduct ? (
+                                        <FaSpinner className="animate-spin text-[8px] sm:text-[10px]" />
+                                      ) : (
+                                        <>
+                                          <FaShoppingCart className="text-[8px] sm:text-[10px] flex-shrink-0" /> 
+                                          <span>Cart</span>
+                                        </>
+                                      )}
+                                    </button>
+                                    <button 
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleProductClick(product._id);
+                                      }}
+                                      className="flex-1 h-7 sm:h-8 rounded-md bg-[#0043FC] hover:bg-[#0038D4] text-white text-[8px] sm:text-[10px] font-medium transition-colors flex items-center justify-center whitespace-nowrap"
+                                    >
+                                      Buy
+                                    </button>
+                                  </>
+                                ) : (
                                   <button 
-                                    onClick={(e) => handleAddToCart(e, product)}
-                                    disabled={isAddingThisProduct}
-                                    className="flex-1 py-1.5 rounded-md bg-[#0043FC]/10 text-[#0043FC] hover:bg-[#0043FC]/20 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-xs font-medium flex items-center justify-center gap-1"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleProductClick(product._id);
+                                    }}
+                                    className="w-full h-7 sm:h-8 rounded-md bg-gray-400 hover:bg-gray-500 text-white text-[8px] sm:text-[10px] font-medium transition-colors flex items-center justify-center whitespace-nowrap"
                                   >
-                                    {isAddingThisProduct ? (
-                                      <FaSpinner className="animate-spin text-xs" />
-                                    ) : (
-                                      <>
-                                        <FaShoppingCart className="text-[10px]" /> Cart
-                                      </>
-                                    )}
+                                    View
                                   </button>
                                 )}
-                                <button 
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleProductClick(product._id);
-                                  }}
-                                  className={`${stockStatus.available ? 'flex-1' : 'w-full'} py-1.5 rounded-md bg-[#0043FC] hover:bg-[#0038D4] text-white text-xs font-medium transition-colors`}
-                                >
-                                  {stockStatus.available ? 'Buy Now' : 'View Details'}
-                                </button>
                               </div>
                             </div>
                           </div>
@@ -478,9 +502,9 @@ const UduuaProducts = () => {
                     </div>
                   )}
 
-                  {/* List View */}
+                  {/* List View - Completely redesigned for mobile */}
                   {viewMode === 'list' && (
-                    <div className="space-y-3">
+                    <div className="space-y-2 sm:space-y-3">
                       {products.map((product) => {
                         const statusStyle = getStatusBadge(product.status);
                         const deliveryBadge = getDeliveryBadge(product);
@@ -497,8 +521,8 @@ const UduuaProducts = () => {
                             onClick={() => handleProductClick(product._id)}
                             className="group bg-white rounded-lg overflow-hidden border border-gray-200 hover:shadow-md transition-all duration-300 cursor-pointer"
                           >
-                            <div className="flex gap-4 p-4">
-                              <div className="relative w-24 h-24 shrink-0 rounded-md overflow-hidden bg-gray-50">
+                            <div className="flex gap-2 sm:gap-4 p-2 sm:p-3 lg:p-4">
+                              <div className="relative w-20 h-20 sm:w-24 sm:h-24 lg:w-28 lg:h-28 shrink-0 rounded-md overflow-hidden bg-gray-50">
                                 <img
                                   src={productImage}
                                   alt={product.name}
@@ -506,72 +530,85 @@ const UduuaProducts = () => {
                                   onError={(e) => { e.target.src = "/placeholder-product.jpg"; }}
                                 />
                                 {hasDiscount && (
-                                  <div className="absolute top-1 left-1 bg-red-500 text-white text-[8px] font-bold px-1 py-0.5 rounded flex items-center gap-0.5">
-                                    <FaPercentage className="text-[6px]" /> {product.discount}%
+                                  <div className="absolute top-0.5 left-0.5 sm:top-1 sm:left-1 bg-red-500 text-white text-[7px] sm:text-[8px] font-bold px-0.5 sm:px-1 py-0.5 rounded flex items-center gap-0.5">
+                                    <FaPercentage className="text-[5px] sm:text-[6px]" /> {product.discount}%
+                                  </div>
+                                )}
+                                {!stockStatus.available && (
+                                  <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
+                                    <span className="text-white font-bold text-[8px] sm:text-[10px] px-1 py-0.5 bg-red-500 rounded">Sold</span>
                                   </div>
                                 )}
                               </div>
-                              <div className="flex-1">
-                                <div className="flex flex-wrap items-start justify-between gap-2 mb-1">
-                                  <div>
-                                    <div className="flex items-center gap-2 mb-1">
-                                      <span className={`${statusStyle.bg} text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full`}>
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-start justify-between gap-1 sm:gap-2">
+                                  <div className="flex-1 min-w-0">
+                                    <div className="flex flex-wrap items-center gap-0.5 sm:gap-1 mb-0.5 sm:mb-1">
+                                      <span className={`${statusStyle.bg} text-white text-[7px] sm:text-[9px] font-bold px-1 sm:px-1.5 py-0.5 rounded-full`}>
                                         {statusStyle.text}
                                       </span>
-                                      <span className={`inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-white text-[8px] ${deliveryBadge.color}`}>
-                                        <FaTruck className="text-[6px]" /> {deliveryBadge.text}
+                                      <span className={`inline-flex items-center gap-0.5 px-1 sm:px-1.5 py-0.5 rounded-full text-white text-[7px] sm:text-[8px] ${deliveryBadge.color}`}>
+                                        <FaTruck className="text-[5px] sm:text-[6px]" /> 
+                                        <span className="hidden xs:inline">{deliveryBadge.text}</span>
+                                        <span className="xs:hidden">{deliveryBadge.text === 'Pay on Delivery' ? 'POD' : 'Online'}</span>
                                       </span>
                                     </div>
-                                    <h3 className="text-base font-semibold text-gray-900">
+                                    <h3 className="text-xs sm:text-sm lg:text-base font-semibold text-gray-900 truncate">
                                       {product.name}
                                     </h3>
-                                    <p className="text-xs text-gray-500 mt-1 line-clamp-1">
+                                    <p className="text-[10px] sm:text-xs text-gray-500 truncate">
                                       {product.brandName || "GENERIC"} • {Array.isArray(product.category) ? product.category[0] : product.category || "General"}
                                     </p>
                                   </div>
-                                  <div className="text-right">
+                                  <div className="text-right shrink-0 ml-1 sm:ml-2">
                                     {hasDiscount ? (
                                       <>
-                                        <div className="text-xl font-bold text-[#0043FC]">
+                                        <div className="text-xs sm:text-sm lg:text-xl font-bold text-[#0043FC]">
                                           {formatPrice(productPrice)}
                                         </div>
-                                        <div className="text-xs text-gray-400 line-through">
+                                        <div className="text-[8px] sm:text-[10px] text-gray-400 line-through">
                                           {formatPrice(originalPrice)}
                                         </div>
                                       </>
                                     ) : (
-                                      <div className="text-xl font-bold text-[#0043FC]">
+                                      <div className="text-xs sm:text-sm lg:text-xl font-bold text-[#0043FC]">
                                         {formatPrice(productPrice)}
                                       </div>
                                     )}
                                   </div>
                                 </div>
-                                <p className="text-sm text-gray-500 line-clamp-2 mb-3">
+                                
+                                {/* Hidden on mobile, visible on tablet+ */}
+                                <p className="hidden sm:block text-xs text-gray-500 line-clamp-2 mt-1 lg:mt-2">
                                   {product.description || 'No description available'}
                                 </p>
-                                <div className="flex items-center justify-between">
-                                  <div className="flex items-center gap-3 text-xs text-gray-400">
+                                
+                                <div className="flex items-center justify-between mt-1 sm:mt-2 lg:mt-3">
+                                  <div className="flex items-center gap-1 sm:gap-2 text-[8px] sm:text-xs text-gray-400">
                                     <span>{product.quantitySold || 0} sold</span>
                                     <div className="flex items-center gap-0.5">
                                       {[...Array(5)].map((_, i) => (
                                         <FaStar 
                                           key={i}
-                                          className={`text-[10px] ${i < Math.floor(product.rating || 4) ? 'text-yellow-400' : 'text-gray-300'}`}
+                                          className={`text-[8px] sm:text-[10px] ${i < Math.floor(product.rating || 4) ? 'text-yellow-400' : 'text-gray-300'}`}
                                         />
                                       ))}
                                     </div>
                                   </div>
-                                  <div className="flex items-center gap-2">
+                                  <div className="flex items-center gap-1.5 sm:gap-2">
                                     {stockStatus.available && (
                                       <button 
                                         onClick={(e) => handleAddToCart(e, product)}
                                         disabled={isAddingThisProduct}
-                                        className="px-3 py-1.5 rounded-md bg-[#0043FC]/10 text-[#0043FC] hover:bg-[#0043FC]/20 transition-colors disabled:opacity-50 text-xs font-medium flex items-center gap-1"
+                                        className="h-7 sm:h-8 px-3 sm:px-4 rounded-md bg-[#0043FC]/10 text-[#0043FC] hover:bg-[#0043FC]/20 transition-colors disabled:opacity-50 text-[8px] sm:text-[10px] font-medium flex items-center gap-1 whitespace-nowrap"
                                       >
                                         {isAddingThisProduct ? (
-                                          <FaSpinner className="animate-spin text-xs" />
+                                          <FaSpinner className="animate-spin text-[8px] sm:text-[10px]" />
                                         ) : (
-                                          <FaShoppingCart className="text-xs" />
+                                          <>
+                                            <FaShoppingCart className="text-[8px] sm:text-[10px]" />
+                                            <span>Cart</span>
+                                          </>
                                         )}
                                       </button>
                                     )}
@@ -580,9 +617,9 @@ const UduuaProducts = () => {
                                         e.stopPropagation();
                                         handleProductClick(product._id);
                                       }}
-                                      className="px-4 py-1.5 rounded-md bg-[#0043FC] hover:bg-[#0038D4] text-white text-sm font-medium transition-colors"
+                                      className="h-7 sm:h-8 px-3 sm:px-4 rounded-md bg-[#0043FC] hover:bg-[#0038D4] text-white text-[8px] sm:text-[10px] font-medium transition-colors flex items-center justify-center whitespace-nowrap"
                                     >
-                                      {stockStatus.available ? 'Buy Now' : 'View Details'}
+                                      {stockStatus.available ? 'Buy' : 'View'}
                                     </button>
                                   </div>
                                 </div>
@@ -594,18 +631,18 @@ const UduuaProducts = () => {
                     </div>
                   )}
                   
-                  {/* Pagination */}
+                  {/* Pagination - Mobile optimized */}
                   {totalPages > 1 && (
-                    <div className="flex justify-center items-center gap-2 mt-8">
+                    <div className="flex justify-center items-center gap-1 sm:gap-2 mt-6 sm:mt-8">
                       <button
                         onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
                         disabled={currentPage === 1}
-                        className="px-4 py-2 border border-gray-200 rounded-md text-sm text-gray-600 hover:border-[#0043FC] hover:text-[#0043FC] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                        className="px-2 sm:px-4 py-1 sm:py-2 border border-gray-200 rounded-md text-[10px] sm:text-sm text-gray-600 hover:border-[#0043FC] hover:text-[#0043FC] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                       >
-                        Previous
+                        Prev
                       </button>
                       
-                      <div className="flex items-center gap-1">
+                      <div className="flex items-center gap-0.5 sm:gap-1">
                         {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => {
                           let pageNum;
                           if (totalPages <= 5) pageNum = i + 1;
@@ -616,7 +653,7 @@ const UduuaProducts = () => {
                             <button
                               key={pageNum}
                               onClick={() => setCurrentPage(pageNum)}
-                              className={`w-10 h-10 rounded-md text-sm font-medium transition-colors ${
+                              className={`w-7 h-7 sm:w-9 sm:h-9 lg:w-10 lg:h-10 rounded-md text-[10px] sm:text-sm font-medium transition-colors ${
                                 currentPage === pageNum
                                   ? 'bg-[#0043FC] text-white'
                                   : 'text-gray-600 hover:bg-gray-100'
@@ -631,7 +668,7 @@ const UduuaProducts = () => {
                       <button
                         onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
                         disabled={currentPage === totalPages}
-                        className="px-4 py-2 border border-gray-200 rounded-md text-sm text-gray-600 hover:border-[#0043FC] hover:text-[#0043FC] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                        className="px-2 sm:px-4 py-1 sm:py-2 border border-gray-200 rounded-md text-[10px] sm:text-sm text-gray-600 hover:border-[#0043FC] hover:text-[#0043FC] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                       >
                         Next
                       </button>
