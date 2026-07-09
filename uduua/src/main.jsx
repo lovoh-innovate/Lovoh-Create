@@ -63,6 +63,7 @@ const router = createBrowserRouter([
       { path: "shop", element: <UduuaShop /> },
       { path: "shop/signup", element: <UduuaSignup /> },
       { path: "shop/login", element: <UduuaLogin /> },
+      {path: "/login", element: <UduuaLogin />},
       { path: "shop/cart", element: <UduuaCart /> },
       { path: "shop/product/:id", element: <UduuaProductDetail /> },
       { path: "checkout", element: <UduuaCheckout /> },
