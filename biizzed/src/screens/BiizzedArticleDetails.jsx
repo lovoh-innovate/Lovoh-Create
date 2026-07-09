@@ -1,4 +1,4 @@
-// screens/BiizzedArticleDetails.jsx - Fixed version (NO delete buttons, NO editing features)
+// screens/BiizzedArticleDetails.jsx - Clean rendering with full HTML support
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
@@ -46,7 +46,171 @@ const extractId = (v) => {
   return toStr(v);
 };
 
-// ====== AUTH MODAL ======
+// ── Clean editor chrome from HTML ──────────────────────────────────────────
+const cleanEditorChrome = (html) => {
+  if (!html) return '';
+
+  let clean = html;
+
+  // 1. Remove delete buttons (any button with bg-red-500 or red-600)
+  clean = clean.replace(/<button[^>]*class="[^"]*red-[56]00[^"]*"[^>]*>[\s\S]*?<\/button>/gi, '');
+
+  // 2. Remove drag‑handle overlays (absolute positioned divs at top‑left)
+  clean = clean.replace(/<div[^>]*class="[^"]*absolute\s+top-\d+\s+left-\d+[^"]*"[^>]*>[\s\S]*?<\/div>/gi, '');
+
+  // 3. Remove caption input fields (any <input> with placeholder containing "caption")
+  clean = clean.replace(/<input[^>]*placeholder="[^"]*[Cc]aption[^"]*"[^>]*\/?>/gi, '');
+
+  // 4. Remove any leftover contenteditable or draggable attributes
+  clean = clean.replace(/\s+contenteditable="[^"]*"/gi, '');
+  clean = clean.replace(/\s+draggable="[^"]*"/gi, '');
+
+  // 5. Remove any "cursor-move" class (not needed for display)
+  clean = clean.replace(/cursor-move/gi, '');
+
+  // 6. Ensure all images are responsive and centered
+  clean = clean.replace(/<img([^>]*)>/gi, (match, attrs) => {
+    // Remove any inline width/height that might be too large, but keep them if reasonable
+    // Just add our class and style for responsiveness
+    return `<img${attrs} class="max-w-full h-auto rounded-xl my-4 shadow-sm" />`;
+  });
+
+  // 7. Fix any empty paragraphs that might remain
+  clean = clean.replace(/<p>\s*<\/p>/gi, '');
+
+  return clean;
+};
+
+// ── Render article content with proper HTML ──────────────────────────────
+const renderArticleContent = (content, additionalImages = [], category = '') => {
+  if (!content) {
+    return <p className="text-gray-400 italic">No content available.</p>;
+  }
+
+  // Check if content contains manual image containers (from TipTap or other editors)
+  const hasManualImages = content.includes('inserted-image-container') || content.includes('image-container');
+
+  if (hasManualImages) {
+    // Clean the content to remove editing UI, then render as HTML
+    const cleanContent = cleanEditorChrome(content);
+    return (
+      <div
+        className="article-content prose prose-gray max-w-none"
+        dangerouslySetInnerHTML={{ __html: cleanContent }}
+      />
+    );
+  }
+
+  // ── No inline images – we may auto‑insert additional images between paragraphs ──
+  // But we must preserve all HTML structure (lists, headings, etc.)
+  if (additionalImages.length === 0) {
+    // Just render the raw HTML (already sanitized by backend)
+    return (
+      <div
+        className="article-content prose prose-gray max-w-none"
+        dangerouslySetInnerHTML={{ __html: content }}
+      />
+    );
+  }
+
+  // ── Auto‑insert additional images between paragraphs ─────────────────────
+  // Split content by paragraph tags, but keep full HTML.
+  // We'll parse the HTML into a DOM fragment, insert images after certain paragraphs.
+  const tempDiv = document.createElement('div');
+  tempDiv.innerHTML = content;
+  const bodyNodes = Array.from(tempDiv.children);
+
+  // Only consider block elements that are likely paragraphs, headings, lists, etc.
+  const blockTags = ['P', 'H1', 'H2', 'H3', 'H4', 'H5', 'H6', 'UL', 'OL', 'BLOCKQUOTE', 'DIV'];
+  const blockNodes = bodyNodes.filter(node => blockTags.includes(node.tagName));
+
+  if (blockNodes.length === 0) {
+    return (
+      <div
+        className="article-content prose prose-gray max-w-none"
+        dangerouslySetInnerHTML={{ __html: content }}
+      />
+    );
+  }
+
+  // Insert images after roughly every Nth block
+  const step = Math.max(1, Math.floor(blockNodes.length / (additionalImages.length + 1)));
+  const elements = [];
+  let imgIdx = 0;
+
+  blockNodes.forEach((node, index) => {
+    // Add the original node (as HTML)
+    elements.push(
+      <div
+        key={`node-${index}`}
+        className="article-content prose prose-gray max-w-none"
+        dangerouslySetInnerHTML={{ __html: node.outerHTML }}
+      />
+    );
+
+    // Insert image after this node if index matches step
+    if ((index + 1) % step === 0 && imgIdx < additionalImages.length) {
+      const defaultCaption = getDefaultCaption(category, imgIdx);
+      elements.push(
+        <figure key={`img-${imgIdx}`} className="my-8">
+          <div className="rounded-2xl overflow-hidden border border-gray-100 bg-gray-50 shadow-sm">
+            <img
+              src={additionalImages[imgIdx]}
+              alt={`${category || 'Article'} image ${imgIdx + 1}`}
+              className="w-full h-auto object-cover"
+              loading="lazy"
+            />
+          </div>
+          <figcaption className="text-xs text-gray-400 mt-2 text-center italic">
+            {defaultCaption}
+          </figcaption>
+        </figure>
+      );
+      imgIdx++;
+    }
+  });
+
+  // Append remaining images
+  while (imgIdx < additionalImages.length) {
+    const defaultCaption = getDefaultCaption(category, imgIdx);
+    elements.push(
+      <figure key={`img-end-${imgIdx}`} className="my-8">
+        <div className="rounded-2xl overflow-hidden border border-gray-100 bg-gray-50 shadow-sm">
+          <img
+            src={additionalImages[imgIdx]}
+            alt={`${category || 'Article'} image ${imgIdx + 1}`}
+            className="w-full h-auto object-cover"
+            loading="lazy"
+          />
+        </div>
+        <figcaption className="text-xs text-gray-400 mt-2 text-center italic">
+          {defaultCaption}
+        </figcaption>
+      </figure>
+    );
+    imgIdx++;
+  }
+
+  return elements;
+};
+
+// ── Helper for captions ────────────────────────────────────────────────────
+const getDefaultCaption = (category, index) => {
+  const captions = {
+    Business: ['Business insights', 'Market trends', 'Industry analysis', 'Corporate strategy'],
+    Technology: ['Tech innovation', 'Digital transformation', 'Future of tech', 'Tech insights'],
+    Startups: ['Startup journey', 'Entrepreneurship', 'Building a startup', 'Founder stories'],
+    Leadership: ['Leadership lessons', 'Management insights', 'Leading teams', 'Executive wisdom'],
+    Marketing: ['Marketing strategy', 'Digital marketing', 'Brand building', 'Consumer insights'],
+    Finance: ['Financial insights', 'Investment strategy', 'Market analysis', 'Wealth management'],
+    Lifestyle: ['Life balance', 'Wellness tips', 'Daily inspiration', 'Living better'],
+    Innovation: ['Creative thinking', 'Innovation lab', 'Future trends', 'Disruptive ideas'],
+  };
+  const categoryCaptions = captions[category] || ['Article insights', 'Featured image', 'Visual story', 'Illustration'];
+  return categoryCaptions[index % categoryCaptions.length];
+};
+
+// ── Auth Modal ──────────────────────────────────────────────────────────────
 const AuthModal = ({ isOpen, onClose }) => {
   if (!isOpen) return null;
   return (
@@ -84,18 +248,14 @@ const AuthModal = ({ isOpen, onClose }) => {
   );
 };
 
-// ====== MODERN SHARE MODAL ======
+// ── Share Modal ──────────────────────────────────────────────────────────────
 const ShareModal = ({ isOpen, onClose, url, title }) => {
   if (!isOpen) return null;
 
   const handleNativeShare = async () => {
     try {
       if (navigator.share) {
-        await navigator.share({
-          title: title,
-          text: title,
-          url: url,
-        });
+        await navigator.share({ title, text: title, url });
       } else {
         await navigator.clipboard.writeText(url);
         toast.success('Link copied!');
@@ -137,7 +297,7 @@ const ShareModal = ({ isOpen, onClose, url, title }) => {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-      <div className="bg-white rounded-2xl max-w-sm w-full p-6 shadow-xl relative animate-fadeInUp">
+      <div className="bg-white rounded-2xl max-sm w-full p-6 shadow-xl relative animate-fadeInUp">
         <button onClick={onClose} className="absolute top-4 right-4 text-gray-400 hover:text-gray-600">
           <FaTimes />
         </button>
@@ -173,6 +333,7 @@ const ShareModal = ({ isOpen, onClose, url, title }) => {
   );
 };
 
+// ── Main Component ──────────────────────────────────────────────────────────
 const BiizzedArticleDetails = () => {
   const { slug } = useParams();
   const navigate = useNavigate();
@@ -342,189 +503,6 @@ const BiizzedArticleDetails = () => {
   const isBookmarked = optBookmark !== null ? optBookmark : (article?.bookmarks || []).some(b => extractId(b) === myId);
   const isFollowing = optFollow !== null ? optFollow : followingList.some(f => extractId(f) === authorId);
 
-  // Get default caption based on category
-  const getDefaultCaption = (category, index) => {
-    const captions = {
-      Business: ['Business insights', 'Market trends', 'Industry analysis', 'Corporate strategy'],
-      Technology: ['Tech innovation', 'Digital transformation', 'Future of tech', 'Tech insights'],
-      Startups: ['Startup journey', 'Entrepreneurship', 'Building a startup', 'Founder stories'],
-      Leadership: ['Leadership lessons', 'Management insights', 'Leading teams', 'Executive wisdom'],
-      Marketing: ['Marketing strategy', 'Digital marketing', 'Brand building', 'Consumer insights'],
-      Finance: ['Financial insights', 'Investment strategy', 'Market analysis', 'Wealth management'],
-      Lifestyle: ['Life balance', 'Wellness tips', 'Daily inspiration', 'Living better'],
-      Innovation: ['Creative thinking', 'Innovation lab', 'Future trends', 'Disruptive ideas'],
-    };
-    const categoryCaptions = captions[category] || ['Article insights', 'Featured image', 'Visual story', 'Illustration'];
-    return categoryCaptions[index % categoryCaptions.length];
-  };
-
-  // ==================== CLEAN CONTENT - REMOVE ALL EDITING ELEMENTS ====================
-  const cleanManualContent = (content) => {
-    if (!content) return '';
-    
-    let cleanHtml = content;
-    
-    // Remove delete buttons (red circle with trash icon)
-    cleanHtml = cleanHtml.replace(/<button[^>]*class="[^"]*bg-red-500[^"]*"[^>]*>[\s\S]*?<\/button>/gi, '');
-    
-    // Remove drag handle buttons
-    cleanHtml = cleanHtml.replace(/<div[^>]*class="[^"]*absolute top-2 left-2[^"]*"[^>]*>[\s\S]*?<\/div>/gi, '');
-    
-    // Remove caption input fields
-    cleanHtml = cleanHtml.replace(/<div[^>]*class="[^"]*text-center mt-2[^"]*"[^>]*>[\s\S]*?<input[^>]*placeholder="[^"]*caption[^"]*"[^>]*>[\s\S]*?<\/div>/gi, '');
-    
-    // Remove any other input elements that might be inside image containers
-    cleanHtml = cleanHtml.replace(/<input[^>]*>/gi, '');
-    
-    // Remove any leftover divs that contain editing elements
-    cleanHtml = cleanHtml.replace(/<div[^>]*class="[^"]*absolute[^"]*"[^>]*>[\s\S]*?<\/div>/gi, '');
-    
-    // Remove any contenteditable attributes
-    cleanHtml = cleanHtml.replace(/contenteditable="[^"]*"/gi, '');
-    
-    // Remove draggable attributes
-    cleanHtml = cleanHtml.replace(/draggable="[^"]*"/gi, '');
-    
-    // Fix image containers - remove editing-related classes but keep the image
-    cleanHtml = cleanHtml.replace(/<div[^>]*class="[^"]*image-container[^"]*"[^>]*>/gi, '<div class="image-container my-4">');
-    
-    // Ensure images are properly styled for viewing
-    cleanHtml = cleanHtml.replace(/<img([^>]*)>/gi, (match, attrs) => {
-      // Remove any cursor-move classes
-      let cleanAttrs = attrs.replace(/cursor-move/gi, '');
-      cleanAttrs = cleanAttrs.replace(/class="[^"]*"/gi, (classMatch) => {
-        let cleanClass = classMatch.replace(/cursor-move/gi, '');
-        return cleanClass;
-      });
-      return `<img${cleanAttrs} class="w-full max-w-2xl h-auto rounded-xl shadow-md mx-auto block my-4">`;
-    });
-    
-    return cleanHtml;
-  };
-
-  // ==================== RENDER CONTENT ====================
-  const renderContentWithImages = () => {
-    if (!article?.content) {
-      return <p className="text-gray-400 italic">No content available.</p>;
-    }
-    
-    let content = article.content;
-    
-    // Check if content contains manually inserted image containers
-    const hasManualImages = content.includes('inserted-image-container') || content.includes('image-container');
-    
-    if (hasManualImages) {
-      // Clean the content to remove all editing elements
-      const cleanContent = cleanManualContent(content);
-      
-      return (
-        <div 
-          className="text-gray-700 leading-8 space-y-5 text-[15px] sm:text-base article-content"
-          dangerouslySetInnerHTML={{ __html: cleanContent }} 
-        />
-      );
-    }
-    
-    // Auto mode - distribute additional images between paragraphs
-    if (additionalImages.length === 0) {
-      return (
-        <div 
-          className="text-gray-700 leading-8 space-y-5 text-[15px] sm:text-base article-content"
-          dangerouslySetInnerHTML={{ __html: content }} 
-        />
-      );
-    }
-    
-    // Simple paragraph splitting for auto mode
-    let paragraphs = [];
-    let textContent = content.replace(/<[^>]+>/g, '');
-    paragraphs = textContent.split(/\n\s*\n|\.\s+/);
-    const validParagraphs = paragraphs.filter(p => p.trim().length > 30);
-    const totalParagraphs = validParagraphs.length;
-    const imageCount = additionalImages.length;
-    
-    if (totalParagraphs === 0) {
-      return (
-        <div 
-          className="text-gray-700 leading-8 space-y-5 text-[15px] sm:text-base article-content"
-          dangerouslySetInnerHTML={{ __html: content }} 
-        />
-      );
-    }
-    
-    // Distribute images evenly
-    const insertPositions = [];
-    const step = totalParagraphs / (imageCount + 1);
-    for (let i = 1; i <= imageCount; i++) {
-      const position = Math.min(Math.round(i * step) - 1, totalParagraphs - 1);
-      if (position === 0 && totalParagraphs > 3) {
-        insertPositions.push(1);
-      } else if (position === totalParagraphs - 1 && totalParagraphs > 3) {
-        insertPositions.push(totalParagraphs - 2);
-      } else {
-        insertPositions.push(position);
-      }
-    }
-    
-    const elements = [];
-    let imageIndex = 0;
-    
-    for (let i = 0; i < validParagraphs.length; i++) {
-      const paragraphContent = validParagraphs[i].trim();
-      
-      elements.push(
-        <div 
-          key={`para-${i}`} 
-          className="text-gray-700 leading-8 text-[15px] sm:text-base mb-5"
-        >
-          <p className="mb-0">{paragraphContent}</p>
-        </div>
-      );
-      
-      if (insertPositions.includes(i) && imageIndex < additionalImages.length) {
-        const defaultCaption = getDefaultCaption(article.category, imageIndex);
-        elements.push(
-          <figure key={`image-${imageIndex}`} className="my-8">
-            <div className="rounded-2xl overflow-hidden border border-gray-100 bg-gray-50 shadow-sm">
-              <img 
-                src={additionalImages[imageIndex]} 
-                alt={`${article.title} - ${defaultCaption}`} 
-                className="w-full h-auto object-cover" 
-                loading="lazy"
-              />
-            </div>
-            <figcaption className="text-xs text-gray-400 mt-2 text-center italic">
-              {defaultCaption}
-            </figcaption>
-          </figure>
-        );
-        imageIndex++;
-      }
-    }
-    
-    while (imageIndex < additionalImages.length) {
-      const defaultCaption = getDefaultCaption(article.category, imageIndex);
-      elements.push(
-        <figure key={`image-end-${imageIndex}`} className="my-8">
-          <div className="rounded-2xl overflow-hidden border border-gray-100 bg-gray-50 shadow-sm">
-            <img 
-              src={additionalImages[imageIndex]} 
-              alt={`${article.title} - ${defaultCaption}`} 
-              className="w-full h-auto object-cover" 
-              loading="lazy"
-            />
-          </div>
-          <figcaption className="text-xs text-gray-400 mt-2 text-center italic">
-            {defaultCaption}
-          </figcaption>
-        </figure>
-      );
-      imageIndex++;
-    }
-    
-    return elements;
-  };
-
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gray-100">
@@ -595,7 +573,7 @@ const BiizzedArticleDetails = () => {
               )}
 
               <div className="p-6">
-                {/* Author Info with Follow */}
+                {/* Author Info */}
                 <div className="flex items-center gap-3 mb-4">
                   <Link to={`/user/${authorUsername}`} onClick={(e) => e.stopPropagation()}>
                     {authorProfile ? (
@@ -634,7 +612,7 @@ const BiizzedArticleDetails = () => {
                   <p className="text-gray-600 text-sm mb-4 border-l-3 border-[#1B3766] pl-4 italic">{article.excerpt}</p>
                 )}
 
-                {/* Modern Action Bar */}
+                {/* Action Bar */}
                 <div className="flex items-center justify-between py-3 border-t border-b border-gray-100 mb-6">
                   <div className="flex items-center gap-1">
                     <button onClick={handleLike} className={`group flex items-center gap-1.5 px-3 py-2 rounded-full transition-colors ${isLiked ? 'text-red-500 bg-red-50' : 'text-gray-500 hover:text-red-500 hover:bg-red-50'}`}>
@@ -664,9 +642,9 @@ const BiizzedArticleDetails = () => {
                   <span className="text-[11px] font-semibold text-[#1B3766] bg-[#1B3766]/5 px-2.5 py-1.5 rounded-full">Biizzed</span>
                 </div>
 
-                {/* Article Content with Images - CLEAN, NO EDITING FEATURES */}
-                <div className="space-y-5 mb-6">
-                  {renderContentWithImages()}
+                {/* ── Article Content ──────────────────────────────────────── */}
+                <div className="mb-6">
+                  {renderArticleContent(article.content, additionalImages, article.category)}
                 </div>
 
                 {article.tags?.length > 0 && (
@@ -677,7 +655,7 @@ const BiizzedArticleDetails = () => {
                   </div>
                 )}
 
-                {/* Comments Section */}
+                {/* ── Comments ────────────────────────────────────────────── */}
                 <div id="comments-section" className="border-t border-gray-200 pt-6">
                   <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
                     <FaRegComment className="text-[#1B3766]" /> Comments ({article.comments?.length || 0})
@@ -797,10 +775,10 @@ const BiizzedArticleDetails = () => {
             </article>
           </main>
 
-          {/* Right Sidebar */}
+          {/* ── Sidebar ────────────────────────────────────────────────────── */}
           <aside className="hidden lg:block w-[320px] flex-shrink-0">
             <div className="fixed top-[120px] w-[320px] h-[calc(100vh-140px)] overflow-y-auto space-y-4 pb-8 no-scrollbar">
-              {/* Share Section */}
+              {/* Share */}
               <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-4">
                 <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Share</h3>
                 <div className="flex justify-around">
@@ -819,7 +797,7 @@ const BiizzedArticleDetails = () => {
                 </div>
               </div>
 
-              {/* Related Articles */}
+              {/* Related */}
               {relatedArticles.length > 0 && (
                 <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-4">
                   <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Related Articles</h3>
@@ -848,7 +826,7 @@ const BiizzedArticleDetails = () => {
                 </div>
               )}
 
-              {/* Author Info */}
+              {/* Author */}
               <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-4 text-center">
                 <Link to={`/user/${authorUsername}`}>
                   {authorProfile ? (
@@ -873,6 +851,7 @@ const BiizzedArticleDetails = () => {
       <ShareModal isOpen={showShareModal} onClose={() => setShowShareModal(false)} url={shareUrl} title={article.title} />
 
       <BiizzedBottomBar />
+
       <style>{`
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
@@ -883,48 +862,115 @@ const BiizzedArticleDetails = () => {
         }
         .animate-fadeInUp { animation: fadeInUp 0.28s ease-out; }
         
+        /* ── Article Content Styles ──────────────────────────────────────── */
+        .article-content {
+          color: #374151;
+          font-size: 15px;
+          line-height: 1.85;
+        }
+        @media (min-width: 640px) {
+          .article-content { font-size: 1rem; }
+        }
+
+        .article-content p {
+          margin-bottom: 1.25rem;
+        }
+
+        .article-content h1,
+        .article-content h2,
+        .article-content h3,
+        .article-content h4 {
+          font-weight: 700;
+          color: #1f2937;
+          margin-top: 1.75rem;
+          margin-bottom: 0.75rem;
+          line-height: 1.3;
+        }
+        .article-content h1 { font-size: 1.875rem; }
+        .article-content h2 { font-size: 1.5rem;   }
+        .article-content h3 { font-size: 1.25rem;  }
+        .article-content h4 { font-size: 1.125rem; }
+
+        .article-content ul,
+        .article-content ol {
+          margin: 1rem 0 1.25rem;
+          padding-left: 1.5rem;
+        }
+        .article-content ul { list-style-type: disc; }
+        .article-content ol { list-style-type: decimal; }
+        .article-content li {
+          margin: 0.35rem 0;
+        }
+        .article-content li > ul,
+        .article-content li > ol {
+          margin: 0.25rem 0;
+        }
+
+        .article-content blockquote {
+          border-left: 3px solid #1B3766;
+          padding-left: 1rem;
+          margin: 1.25rem 0;
+          color: #4b5563;
+          font-style: italic;
+        }
+
+        .article-content a {
+          color: #1B3766;
+          text-decoration: underline;
+          text-underline-offset: 2px;
+        }
+        .article-content a:hover { color: #142952; }
+
         .article-content img {
           max-width: 100%;
           height: auto;
           border-radius: 0.75rem;
           margin: 1.5rem 0;
+          box-shadow: 0 1px 4px rgba(0,0,0,0.08);
         }
-        
-        .article-content p {
-          margin-bottom: 1.25rem;
-          line-height: 1.75;
+
+        .article-content code {
+          background: #f3f4f6;
+          padding: 0.15rem 0.4rem;
+          border-radius: 4px;
+          font-family: monospace;
+          font-size: 0.9em;
         }
-        
-        .article-content h1, .article-content h2, .article-content h3 {
-          margin-top: 1.5rem;
-          margin-bottom: 0.75rem;
-          font-weight: 700;
-          color: #1f2937;
+        .article-content pre {
+          background: #1f2937;
+          color: #f9fafb;
+          padding: 1rem;
+          border-radius: 0.75rem;
+          overflow-x: auto;
+          margin: 1.25rem 0;
         }
-        
-        .article-content h2 {
-          font-size: 1.5rem;
+        .article-content pre code {
+          background: transparent;
+          padding: 0;
+          font-size: 0.875em;
         }
-        
-        .article-content h3 {
-          font-size: 1.25rem;
+
+        .article-content hr {
+          border: none;
+          border-top: 1px solid #e5e7eb;
+          margin: 2rem 0;
         }
-        
-        .article-content ul, .article-content ol {
-          margin: 1rem 0;
-          padding-left: 1.5rem;
+
+        .article-content table {
+          width: 100%;
+          border-collapse: collapse;
+          margin: 1.25rem 0;
+          font-size: 0.9rem;
         }
-        
-        .article-content li {
-          margin: 0.25rem 0;
+        .article-content th,
+        .article-content td {
+          border: 1px solid #e5e7eb;
+          padding: 0.5rem 0.75rem;
+          text-align: left;
         }
-        
-        .article-content blockquote {
-          border-left: 3px solid #1B3766;
-          padding-left: 1rem;
-          margin: 1rem 0;
-          color: #4b5563;
-          font-style: italic;
+        .article-content th {
+          background: #f9fafb;
+          font-weight: 600;
         }
       `}</style>
     </div>
