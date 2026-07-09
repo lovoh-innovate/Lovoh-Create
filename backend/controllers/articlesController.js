@@ -1,10 +1,11 @@
-// controllers/articlesController.js – With ownership, featured requests, and coming soon
+// controllers/articlesController.js – Complete file with rich text support
 import asyncHandler from 'express-async-handler';
 import Article from '../models/articleModel.js';
 import User from '../models/userModel.js';
 import { v2 as cloudinary } from 'cloudinary';
 import { notifySubscribersOfNewContent } from './subscribeController.js';
 import { notifyNewContent } from './notificationController.js';
+import { sanitizeArticleContent, sanitizeExcerpt } from '../utils/sanitizeContent.js';
 
 // ==================== CREATE ARTICLE ====================
 const createArticle = asyncHandler(async (req, res) => {
@@ -22,6 +23,7 @@ const createArticle = asyncHandler(async (req, res) => {
 
   const isComingSoon = comingSoon === 'true' || comingSoon === true;
 
+  // Validation
   if (!title || !excerpt || !category) {
     res.status(400);
     throw new Error('Please provide title, excerpt, and category');
@@ -38,6 +40,7 @@ const createArticle = asyncHandler(async (req, res) => {
     throw new Error('At least one image is required (cover image)');
   }
 
+  // Upload images
   const imageUrls = [];
   for (const file of req.files) {
     try {
@@ -57,6 +60,7 @@ const createArticle = asyncHandler(async (req, res) => {
 
   const featuredImage = imageUrls[0];
 
+  // Generate unique slug
   const baseSlug = title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
   let slug = baseSlug;
   let counter = 1;
@@ -64,12 +68,17 @@ const createArticle = asyncHandler(async (req, res) => {
     slug = `${baseSlug}-${counter++}`;
   }
 
+  // Sanitize content and excerpt using helper
+  const sanitizedContent = sanitizeArticleContent(content || '<p><em>Coming soon – full article will be available shortly.</em></p>');
+  const sanitizedExcerpt = sanitizeExcerpt(excerpt);
+
+  // Create the article
   const article = await Article.create({
-    title,
-    excerpt,
-    content: content || '<p><em>Coming soon – full article will be available shortly.</em></p>',
+    title: title.trim(),
+    excerpt: sanitizedExcerpt,
+    content: sanitizedContent,
     category,
-    tags: tags ? (Array.isArray(tags) ? tags : tags.split(',')) : [],
+    tags: tags ? (Array.isArray(tags) ? tags.map(t => t.trim()) : tags.split(',').map(t => t.trim())) : [],
     images: imageUrls,
     featuredImage,
     author: req.user.name || req.user.username || 'User',
@@ -82,8 +91,10 @@ const createArticle = asyncHandler(async (req, res) => {
     publishedAt: (status === 'published' && !isComingSoon) ? new Date() : null,
     createdBy: req.user._id,
     comingSoon: isComingSoon,
+    contentFormat: 'html',
   });
 
+  // Send notifications if published
   if (article.status === 'published' && !article.comingSoon) {
     notifySubscribersOfNewContent(article, 'article');
     const notifyResult = await notifyNewContent({ type: 'article', content: article });
@@ -95,7 +106,6 @@ const createArticle = asyncHandler(async (req, res) => {
   res.status(201).json(article);
 });
 
-// ==================== GET ALL ARTICLES (public) ====================
 // ==================== GET ALL ARTICLES (public) ====================
 const getArticles = asyncHandler(async (req, res) => {
   const {
@@ -124,9 +134,8 @@ const getArticles = asyncHandler(async (req, res) => {
   }
 
   try {
-    // FIX: Populate authorId to get username
     const articles = await Article.find(query)
-      .populate('authorId', 'name username profile') // Add this line!
+      .populate('authorId', 'name username profile')
       .sort(sort)
       .limit(limit * 1)
       .skip((page - 1) * limit)
@@ -138,7 +147,7 @@ const getArticles = asyncHandler(async (req, res) => {
       authorId: article.authorId ? {
         _id: article.authorId._id.toString(),
         name: article.authorId.name,
-        username: article.authorId.username,  // Now this will be available!
+        username: article.authorId.username,
         profile: article.authorId.profile,
       } : null,
       createdBy: article.createdBy ? article.createdBy.toString() : null,
@@ -188,7 +197,6 @@ const getUserArticles = asyncHandler(async (req, res) => {
     const statuses = status.split(',').map(s => s.trim());
     query.status = { $in: statuses };
   }
-  // If no status specified, return ALL
 
   const articles = await Article.find(query)
     .sort({ createdAt: -1 })
@@ -196,7 +204,6 @@ const getUserArticles = asyncHandler(async (req, res) => {
     .skip((page - 1) * limit)
     .lean();
 
-  // Ensure status and comingSoon fields are present
   const articlesWithFlags = articles.map(article => ({
     ...article,
     _id: article._id.toString(),
@@ -276,6 +283,7 @@ const updateArticle = asyncHandler(async (req, res) => {
   const newStatus = status || article.status;
   const willBePublished = (newStatus === 'published') && !isComingSoon;
 
+  // Validate content for published articles
   if (willBePublished && (!content || content.trim().length < 20)) {
     res.status(400);
     throw new Error('Cannot publish an article without full content. Add content or keep it as coming soon.');
@@ -306,6 +314,7 @@ const updateArticle = asyncHandler(async (req, res) => {
       imagesToKeep = Array.isArray(keepImages) ? keepImages : [keepImages];
     }
 
+    // Delete removed images from Cloudinary
     for (const oldImage of article.images) {
       if (!imagesToKeep.includes(oldImage)) {
         try {
@@ -332,11 +341,18 @@ const updateArticle = asyncHandler(async (req, res) => {
     article.slug = newSlug;
   }
 
-  if (title) article.title = title;
-  if (excerpt) article.excerpt = excerpt;
-  if (content) article.content = content;
+  // Sanitize content and excerpt using helper
+  if (content !== undefined) {
+    article.content = sanitizeArticleContent(content);
+  }
+  if (excerpt) {
+    article.excerpt = sanitizeExcerpt(excerpt);
+  }
+
+  // Update other fields
+  if (title) article.title = title.trim();
   if (category) article.category = category;
-  if (tags) article.tags = Array.isArray(tags) ? tags : tags.split(',');
+  if (tags) article.tags = Array.isArray(tags) ? tags.map(t => t.trim()) : tags.split(',').map(t => t.trim());
   if (updatedImages) article.images = updatedImages;
   if (featuredImage) article.featuredImage = featuredImage;
   article.comingSoon = isComingSoon;
@@ -350,6 +366,7 @@ const updateArticle = asyncHandler(async (req, res) => {
   const oldStatus = article.status;
   article.status = newStatus;
 
+  // Handle publication
   const isBecomingPublished = (oldStatus !== 'published' && newStatus === 'published') && !isComingSoon;
   if (isBecomingPublished) {
     article.publishedAt = new Date();
@@ -456,7 +473,6 @@ const toggleFeatured = asyncHandler(async (req, res) => {
     throw new Error('Article not found');
   }
   article.isFeatured = !article.isFeatured;
-  // Clear any pending request when toggling directly
   if (article.isFeatured && article.featuredRequest) article.featuredRequest = false;
   await article.save();
   res.json({ message: `Article ${article.isFeatured ? 'featured' : 'unfeatured'}`, article });
@@ -505,6 +521,7 @@ const likeArticle = asyncHandler(async (req, res) => {
   });
 });
 
+// ==================== BOOKMARK ARTICLE ====================
 const bookmarkArticle = asyncHandler(async (req, res) => {
   const article = await Article.findById(req.params.id);
   if (!article) {
@@ -531,6 +548,7 @@ const bookmarkArticle = asyncHandler(async (req, res) => {
   });
 });
 
+// ==================== ADD COMMENT ====================
 const addArticleComment = asyncHandler(async (req, res) => {
   const { text, parentCommentId } = req.body;
 
@@ -582,6 +600,7 @@ const addArticleComment = asyncHandler(async (req, res) => {
   res.status(201).json(newComment);
 });
 
+// ==================== LIKE COMMENT ====================
 const likeArticleComment = asyncHandler(async (req, res) => {
   const { id, commentId } = req.params;
   const { replyId } = req.body;
@@ -627,6 +646,7 @@ const likeArticleComment = asyncHandler(async (req, res) => {
   });
 });
 
+// ==================== DELETE COMMENT ====================
 const deleteArticleComment = asyncHandler(async (req, res) => {
   const { id, commentId } = req.params;
   const { replyId } = req.body;
@@ -670,16 +690,19 @@ const deleteArticleComment = asyncHandler(async (req, res) => {
   res.json({ message: 'Comment removed' });
 });
 
+// ==================== GET BOOKMARKED ARTICLES ====================
 const getBookmarkedArticles = asyncHandler(async (req, res) => {
   const user = await User.findById(req.user._id).populate('bookmarkedArticles');
   res.json(user.bookmarkedArticles || []);
 });
 
+// ==================== GET ARTICLE CATEGORIES ====================
 const getArticleCategories = asyncHandler(async (req, res) => {
   const categories = await Article.distinct('category');
   res.json(categories);
 });
 
+// ==================== EXPORTS ====================
 export {
   createArticle,
   getArticles,
