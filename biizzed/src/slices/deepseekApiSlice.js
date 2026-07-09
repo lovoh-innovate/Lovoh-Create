@@ -4,12 +4,18 @@ import { apiSlice } from './apiSlice';
 export const deepseekApiSlice = apiSlice.injectEndpoints({
   endpoints: (builder) => ({
     searchDeepseek: builder.mutation({
-      query: (params) => ({ // <-- accept an object, not a single value
+      query: (params) => ({
         url: '/deepseek/search',
         method: 'POST',
-        body: params, // <-- send params directly (they already contain query and mode)
+        body: params,
       }),
-      transformResponse: (response) => response.results || [],
+      transformResponse: (response) => {
+        // Ensure we always return an array
+        const results = response?.results;
+        if (Array.isArray(results)) return results;
+        if (results && typeof results === 'object') return [results];
+        return [];
+      },
       transformErrorResponse: (response) => {
         return response.data?.error || 'Search failed';
       },

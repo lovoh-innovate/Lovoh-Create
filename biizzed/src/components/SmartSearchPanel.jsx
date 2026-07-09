@@ -22,7 +22,10 @@ const SmartSearchPanel = ({ isOpen, onClose, editor, onFillForm }) => {
         query: trimmed,
         mode: mode,
       }).unwrap();
-      setResults(data);
+
+      // Normalize: if data is an object (not array), wrap it in an array
+      const normalized = Array.isArray(data) ? data : [data];
+      setResults(normalized);
     } catch (err) {
       console.error('Search error:', err);
       toast.error(err?.data?.error || err?.message || 'Search failed');
@@ -50,6 +53,15 @@ const SmartSearchPanel = ({ isOpen, onClose, editor, onFillForm }) => {
     onClose();
   };
 
+  // Determine what action to take when clicking a result card
+  const handleCardClick = (item) => {
+    if (mode === 'compose') {
+      handleFillForm(item);
+    } else {
+      insertResult(item.content || item.snippet);
+    }
+  };
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
       <div className="bg-white rounded-2xl w-full max-w-2xl max-h-[80vh] shadow-xl relative flex flex-col">
@@ -68,23 +80,23 @@ const SmartSearchPanel = ({ isOpen, onClose, editor, onFillForm }) => {
         <div className="flex gap-2 p-4 border-b border-gray-200">
           <button
             onClick={() => setMode('search')}
-            className={`flex-1 py-2 px-4 rounded-xl text-sm font-medium transition-colors ${
+            className={`flex-1 py-2 px-3 sm:px-4 rounded-xl text-xs sm:text-sm font-medium transition-colors ${
               mode === 'search'
                 ? 'bg-[#1B3766] text-white'
                 : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
             }`}
           >
-            <FaSearch className="inline mr-1" /> Search & Insert
+            <FaSearch className="inline mr-1 text-xs sm:text-sm" /> Search & Insert
           </button>
           <button
             onClick={() => setMode('compose')}
-            className={`flex-1 py-2 px-4 rounded-xl text-sm font-medium transition-colors ${
+            className={`flex-1 py-2 px-3 sm:px-4 rounded-xl text-xs sm:text-sm font-medium transition-colors ${
               mode === 'compose'
                 ? 'bg-[#1B3766] text-white'
                 : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
             }`}
           >
-            <FaMagic className="inline mr-1" /> Compose Article
+            <FaMagic className="inline mr-1 text-xs sm:text-sm" /> Compose Article
           </button>
         </div>
 
@@ -100,7 +112,7 @@ const SmartSearchPanel = ({ isOpen, onClose, editor, onFillForm }) => {
                   ? 'Search for news, topics, or keywords...'
                   : 'Describe the article you want to write...'
               }
-              className="flex-1 px-4 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#1B3766]"
+              className="flex-1 px-4 py-2 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#1B3766]"
             />
             <button
               type="submit"
@@ -122,11 +134,12 @@ const SmartSearchPanel = ({ isOpen, onClose, editor, onFillForm }) => {
             results.map((item, index) => (
               <div
                 key={index}
-                className="p-3 border border-gray-200 rounded-xl hover:border-[#1B3766] transition-colors group"
+                className="p-3 border border-gray-200 rounded-xl hover:border-[#1B3766] transition-colors cursor-pointer group"
+                onClick={() => handleCardClick(item)}
               >
-                <div className="flex items-start justify-between">
+                <div className="flex items-start justify-between gap-2">
                   <div className="flex-1 min-w-0">
-                    <h4 className="font-semibold text-gray-900">{item.title}</h4>
+                    <h4 className="font-semibold text-gray-900 text-sm sm:text-base">{item.title}</h4>
                     <p className="text-sm text-gray-600 mt-1 line-clamp-2">{item.snippet}</p>
                     {mode === 'compose' && (item.category || item.tags?.length) && (
                       <div className="mt-2 flex flex-wrap gap-1">
@@ -143,29 +156,29 @@ const SmartSearchPanel = ({ isOpen, onClose, editor, onFillForm }) => {
                       </div>
                     )}
                   </div>
-                  <div className="flex flex-col items-end gap-1 ml-2">
-                    {mode === 'search' && (
+                  {/* Action Button - always visible on mobile, hover on desktop */}
+                  <div className="flex-shrink-0 flex items-center">
+                    {mode === 'search' ? (
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
                           insertResult(item.content || item.snippet);
                         }}
-                        className="text-[#1B3766] opacity-0 group-hover:opacity-100 transition-opacity"
+                        className="p-2 rounded-full text-[#1B3766] bg-[#1B3766]/10 hover:bg-[#1B3766]/20 transition-colors"
                         title="Insert into editor"
                       >
-                        <FaPlusCircle className="text-lg" />
+                        <FaPlusCircle className="text-base sm:text-lg" />
                       </button>
-                    )}
-                    {mode === 'compose' && (
+                    ) : (
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
                           handleFillForm(item);
                         }}
-                        className="text-[#1B3766] opacity-0 group-hover:opacity-100 transition-opacity"
+                        className="p-2 rounded-full text-[#1B3766] bg-[#1B3766]/10 hover:bg-[#1B3766]/20 transition-colors"
                         title="Fill form with this suggestion"
                       >
-                        <FaFillDrip className="text-lg" />
+                        <FaFillDrip className="text-base sm:text-lg" />
                       </button>
                     )}
                   </div>
@@ -173,7 +186,7 @@ const SmartSearchPanel = ({ isOpen, onClose, editor, onFillForm }) => {
               </div>
             ))
           ) : (
-            <div className="text-center py-8 text-gray-400">
+            <div className="text-center py-8 text-gray-400 text-sm sm:text-base">
               {query
                 ? 'No results found. Try a different search.'
                 : mode === 'search'

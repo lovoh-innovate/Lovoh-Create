@@ -1,4 +1,4 @@
-// src/screens/BiizzedEditArticle.jsx – Full working version with visible lists
+// src/screens/BiizzedEditArticle.jsx – Mobile-optimized UI
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useSelector } from 'react-redux';
@@ -445,7 +445,7 @@ const BiizzedEditArticle = () => {
     <div className="min-h-screen bg-gray-100">
       <BiizzedArticlesNavbar />
 
-      <div className="max-w-5xl mx-auto px-4 py-4 sm:py-8">
+      <div className="max-w-5xl mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-8">
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
           <div className="flex items-center gap-3">
@@ -489,9 +489,9 @@ const BiizzedEditArticle = () => {
         </div>
 
         {/* ── Form ────────────────────────────────────────────────────────────── */}
-        <form onSubmit={handleSubmit} className="space-y-6">
+        <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
           {/* Cover Image */}
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-4 sm:p-6">
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-3 sm:p-6">
             <label className="block text-sm font-semibold text-gray-700 mb-2">
               Cover Images <span className="text-red-500">*</span>
             </label>
@@ -500,7 +500,7 @@ const BiizzedEditArticle = () => {
               {existingCoverImages.length > 0 && (
                 <div>
                   <p className="text-xs text-gray-500 mb-1">Current Cover Images</p>
-                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 sm:gap-3">
                     {existingCoverImages.map((url, index) => (
                       <div
                         key={index}
@@ -532,7 +532,7 @@ const BiizzedEditArticle = () => {
               {newCoverImagePreviews.length > 0 && (
                 <div>
                   <p className="text-xs text-gray-500 mb-1">New Images to Add</p>
-                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 sm:gap-3">
                     {newCoverImagePreviews.map((preview, index) => (
                       <div
                         key={`new-${index}`}
@@ -579,7 +579,7 @@ const BiizzedEditArticle = () => {
           </div>
 
           {/* Title */}
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-4 sm:p-6">
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-3 sm:p-6">
             <label htmlFor="title" className="block text-sm font-semibold text-gray-700 mb-2">
               Title <span className="text-red-500">*</span>
             </label>
@@ -599,7 +599,7 @@ const BiizzedEditArticle = () => {
           </div>
 
           {/* Excerpt */}
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-4 sm:p-6">
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-3 sm:p-6">
             <label htmlFor="excerpt" className="block text-sm font-semibold text-gray-700 mb-2">
               Excerpt <span className="text-red-500">*</span>
             </label>
@@ -619,7 +619,7 @@ const BiizzedEditArticle = () => {
           </div>
 
           {/* Category */}
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-4 sm:p-6">
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-3 sm:p-6">
             <label htmlFor="category" className="block text-sm font-semibold text-gray-700 mb-2">
               Category <span className="text-red-500">*</span>
             </label>
@@ -638,7 +638,7 @@ const BiizzedEditArticle = () => {
           </div>
 
           {/* Tags */}
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-4 sm:p-6">
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-3 sm:p-6">
             <label className="block text-sm font-semibold text-gray-700 mb-2">
               Tags
             </label>
@@ -681,7 +681,7 @@ const BiizzedEditArticle = () => {
 
           {/* ── Rich Text Editor ────────────────────────────────────────────── */}
           <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
-            <div className="p-4 sm:p-6">
+            <div className="p-3 sm:p-6">
               <label className="block text-sm font-semibold text-gray-700 mb-2">
                 Content {status === 'published' && !comingSoon && <span className="text-red-500">*</span>}
                 <span className="text-xs text-gray-400 ml-2 font-normal">
@@ -888,7 +888,7 @@ const BiizzedEditArticle = () => {
           </div>
 
           {/* ── Publishing Options ───────────────────────────────────────────── */}
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-4 sm:p-6">
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-3 sm:p-6">
             <h3 className="text-sm font-semibold text-gray-700 mb-4">Publishing Options</h3>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -1048,7 +1048,6 @@ const BiizzedEditArticle = () => {
           margin: 1rem 0 0.5rem;
         }
 
-        /* ── Make lists visible while editing ──────────────────────────────── */
         .ProseMirror ul {
           list-style-type: disc !important;
           padding-left: 1.5rem !important;
@@ -1127,7 +1126,6 @@ const BiizzedEditArticle = () => {
           color: #142952;
         }
 
-        /* ── Preview ──────────────────────────────────────────────────────────── */
         .article-content {
           color: #374151;
           font-size: 15px;

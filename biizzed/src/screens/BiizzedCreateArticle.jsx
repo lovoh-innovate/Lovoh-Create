@@ -1,4 +1,4 @@
-// src/screens/BiizzedCreateArticle.jsx – With Full AI Compose
+// src/screens/BiizzedCreateArticle.jsx – UI optimized for mobile
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSelector } from 'react-redux';
@@ -277,10 +277,8 @@ const BiizzedCreateArticle = () => {
     if (category) setCategory(category);
     if (tags && Array.isArray(tags)) setTags(tags);
     if (content && editor) {
-      // Replace editor content with the AI-generated content
       editor.commands.setContent(content);
     }
-    // Optionally set status to draft to let user review
     setStatus('draft');
     toast.success('Form filled with AI suggestions! Review and publish.');
   };
@@ -402,7 +400,7 @@ const BiizzedCreateArticle = () => {
     <div className="min-h-screen bg-gray-100">
       <BiizzedArticlesNavbar />
 
-      <div className="max-w-5xl mx-auto px-4 py-4 sm:py-8">
+      <div className="max-w-5xl mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-8">
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
           <div className="flex items-center gap-3">
@@ -448,15 +446,15 @@ const BiizzedCreateArticle = () => {
         </div>
 
         {/* ── Form ────────────────────────────────────────────────────────────── */}
-        <form onSubmit={handleSubmit} className="space-y-6">
+        <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
           {/* Cover Image */}
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-4 sm:p-6">
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-3 sm:p-6">
             <label className="block text-sm font-semibold text-gray-700 mb-2">
               Cover Image <span className="text-red-500">*</span>
             </label>
 
             {coverImagePreviews.length > 0 ? (
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 sm:gap-3">
                 {coverImagePreviews.map((preview, index) => (
                   <div
                     key={index}
@@ -515,7 +513,7 @@ const BiizzedCreateArticle = () => {
           </div>
 
           {/* Title */}
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-4 sm:p-6">
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-3 sm:p-6">
             <label htmlFor="title" className="block text-sm font-semibold text-gray-700 mb-2">
               Title <span className="text-red-500">*</span>
             </label>
@@ -535,7 +533,7 @@ const BiizzedCreateArticle = () => {
           </div>
 
           {/* Excerpt */}
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-4 sm:p-6">
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-3 sm:p-6">
             <label htmlFor="excerpt" className="block text-sm font-semibold text-gray-700 mb-2">
               Excerpt <span className="text-red-500">*</span>
             </label>
@@ -555,7 +553,7 @@ const BiizzedCreateArticle = () => {
           </div>
 
           {/* Category */}
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-4 sm:p-6">
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-3 sm:p-6">
             <label htmlFor="category" className="block text-sm font-semibold text-gray-700 mb-2">
               Category <span className="text-red-500">*</span>
             </label>
@@ -574,7 +572,7 @@ const BiizzedCreateArticle = () => {
           </div>
 
           {/* Tags */}
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-4 sm:p-6">
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-3 sm:p-6">
             <label className="block text-sm font-semibold text-gray-700 mb-2">
               Tags
             </label>
@@ -617,7 +615,7 @@ const BiizzedCreateArticle = () => {
 
           {/* ── Rich Text Editor ────────────────────────────────────────────── */}
           <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
-            <div className="p-4 sm:p-6">
+            <div className="p-3 sm:p-6">
               <label className="block text-sm font-semibold text-gray-700 mb-2">
                 Content {status === 'published' && !comingSoon && <span className="text-red-500">*</span>}
                 <span className="text-xs text-gray-400 ml-2 font-normal">
@@ -837,7 +835,7 @@ const BiizzedCreateArticle = () => {
           </div>
 
           {/* ── Publishing Options ───────────────────────────────────────────── */}
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-4 sm:p-6">
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-3 sm:p-6">
             <h3 className="text-sm font-semibold text-gray-700 mb-4">Publishing Options</h3>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
