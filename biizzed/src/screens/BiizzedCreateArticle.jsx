@@ -1,4 +1,4 @@
-// src/screens/BiizzedCreateArticle.jsx – With fixed preview toggle
+// src/screens/BiizzedCreateArticle.jsx – With Full AI Compose
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSelector } from 'react-redux';
@@ -9,7 +9,7 @@ import {
   FaBold, FaItalic, FaUnderline, FaStrikethrough,
   FaListUl, FaListOl, FaQuoteLeft, FaCode, FaLink,
   FaHeading, FaAlignLeft, FaAlignCenter, FaAlignRight,
-  FaTrash,
+  FaTrash, FaBrain,
 } from 'react-icons/fa';
 import { useCreateArticleMutation } from '../slices/articlesApiSlice';
 import BiizzedArticlesNavbar from '../components/BiizzedArticlesNavbar';
@@ -21,6 +21,7 @@ import Link from '@tiptap/extension-link';
 import Image from '@tiptap/extension-image';
 import TextAlign from '@tiptap/extension-text-align';
 import Underline from '@tiptap/extension-underline';
+import SmartSearchPanel from '../components/SmartSearchPanel';
 
 const CATEGORIES = [
   'Business', 'Technology', 'Lifestyle', 'Health', 'Education',
@@ -61,6 +62,7 @@ const BiizzedCreateArticle = () => {
   const [comingSoon, setComingSoon] = useState(false);
   const [errors, setErrors] = useState({});
   const [showPreview, setShowPreview] = useState(false);
+  const [isSmartSearchOpen, setIsSmartSearchOpen] = useState(false);
   const fileInputRef = useRef(null);
   const isAdmin = userInfo?.role === 'admin';
 
@@ -69,6 +71,14 @@ const BiizzedCreateArticle = () => {
     extensions: [
       StarterKit.configure({
         heading: { levels: [1, 2, 3, 4, 5, 6] },
+        bulletList: {
+          keepMarks: true,
+          keepAttributes: false,
+        },
+        orderedList: {
+          keepMarks: true,
+          keepAttributes: false,
+        },
       }),
       Placeholder.configure({
         placeholder: 'Write your article content here...',
@@ -99,7 +109,6 @@ const BiizzedCreateArticle = () => {
       attributes: {
         class: 'prose prose-sm max-w-none focus:outline-none min-h-[300px] p-4',
       },
-      // ── Drag & Drop ──────────────────────────────────────────────────────
       handleDrop: (view, event, slice, moved) => {
         if (moved) return false;
         const files = event.dataTransfer?.files;
@@ -131,7 +140,6 @@ const BiizzedCreateArticle = () => {
         }
         return false;
       },
-      // ── Paste Images ──────────────────────────────────────────────────────
       handlePaste: (view, event) => {
         const items = event.clipboardData?.items;
         if (!items) return false;
@@ -260,6 +268,21 @@ const BiizzedCreateArticle = () => {
       e.preventDefault();
       addTag();
     }
+  };
+
+  // ── Fill form with AI suggestions ──────────────────────────────────────────
+  const handleFillForm = ({ title, excerpt, category, tags, content }) => {
+    if (title) setTitle(title);
+    if (excerpt) setExcerpt(excerpt);
+    if (category) setCategory(category);
+    if (tags && Array.isArray(tags)) setTags(tags);
+    if (content && editor) {
+      // Replace editor content with the AI-generated content
+      editor.commands.setContent(content);
+    }
+    // Optionally set status to draft to let user review
+    setStatus('draft');
+    toast.success('Form filled with AI suggestions! Review and publish.');
   };
 
   // ── Validation ─────────────────────────────────────────────────────────────
@@ -592,7 +615,7 @@ const BiizzedCreateArticle = () => {
             <p className="text-xs text-gray-400 mt-1">Press Enter to add tag (max 10)</p>
           </div>
 
-          {/* ── Rich Text Editor with Fixed Preview ────────────────────────── */}
+          {/* ── Rich Text Editor ────────────────────────────────────────────── */}
           <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
             <div className="p-4 sm:p-6">
               <label className="block text-sm font-semibold text-gray-700 mb-2">
@@ -721,6 +744,17 @@ const BiizzedCreateArticle = () => {
                       >
                         <FaTrash className="text-sm" />
                       </button>
+
+                      {/* ── AI Smart Search Button ───────────────────────────── */}
+                      <button
+                        type="button"
+                        onClick={() => setIsSmartSearchOpen(true)}
+                        className="p-2 rounded-lg text-[#1B3766] hover:bg-[#1B3766]/10 transition-colors flex items-center gap-1"
+                        title="AI Smart Search & Compose"
+                      >
+                        <FaBrain className="text-sm" />
+                        <span className="text-xs font-medium hidden sm:inline">AI Assist</span>
+                      </button>
                     </div>
 
                     <EditorContent editor={editor} />
@@ -789,6 +823,7 @@ const BiizzedCreateArticle = () => {
                 <div className={showPreview ? 'block' : 'hidden'}>
                   <div className="min-h-[400px] p-6 border border-gray-200 rounded-xl bg-gray-50 prose prose-sm max-w-none">
                     <div
+                      className="article-content"
                       dangerouslySetInnerHTML={{
                         __html: editor?.getHTML() || '<p class="text-gray-400 italic">No content to preview</p>',
                       }}
@@ -930,12 +965,24 @@ const BiizzedCreateArticle = () => {
                 Cover image is required. You can add multiple images in the content area using the image button,
                 drag & drop, or paste from clipboard. Drag images up/down to reposition them.
               </p>
+              <p className="text-xs text-[#1B3766] mt-1">
+                <strong>AI Assistant:</strong> Use the <FaBrain className="inline text-xs" /> AI Assist button to
+                search for content or generate a complete article outline.
+              </p>
             </div>
           </div>
         </form>
       </div>
 
       <BiizzedBottomBar />
+
+      {/* ── AI Smart Search Modal ────────────────────────────────────────────── */}
+      <SmartSearchPanel
+        isOpen={isSmartSearchOpen}
+        onClose={() => setIsSmartSearchOpen(false)}
+        editor={editor}
+        onFillForm={handleFillForm}
+      />
 
       {/* ── Editor Styles ────────────────────────────────────────────────────── */}
       <style>{`
@@ -962,11 +1009,26 @@ const BiizzedCreateArticle = () => {
           font-weight: 600;
           margin: 1rem 0 0.5rem;
         }
-        .ProseMirror ul,
-        .ProseMirror ol {
-          padding-left: 1.5rem;
-          margin: 0.75rem 0;
+
+        /* ── List markers inside the editor ────────────────────────────────── */
+        .ProseMirror ul {
+          list-style-type: disc !important;
+          padding-left: 1.5rem !important;
+          margin: 0.75rem 0 !important;
         }
+        .ProseMirror ol {
+          list-style-type: decimal !important;
+          padding-left: 1.5rem !important;
+          margin: 0.75rem 0 !important;
+        }
+        .ProseMirror li {
+          margin: 0.25rem 0 !important;
+        }
+        .ProseMirror li > ul,
+        .ProseMirror li > ol {
+          margin: 0.25rem 0 !important;
+        }
+
         .ProseMirror blockquote {
           border-left: 3px solid #1B3766;
           padding-left: 1rem;
@@ -1025,6 +1087,72 @@ const BiizzedCreateArticle = () => {
         }
         .ProseMirror a:hover {
           color: #142952;
+        }
+
+        /* ── Preview styles (same as article) ──────────────────────────────── */
+        .article-content {
+          color: #374151;
+          font-size: 15px;
+          line-height: 1.85;
+        }
+        @media (min-width: 640px) {
+          .article-content { font-size: 1rem; }
+        }
+        .article-content p {
+          margin-bottom: 1.25rem;
+        }
+        .article-content h1,
+        .article-content h2,
+        .article-content h3,
+        .article-content h4 {
+          font-weight: 700;
+          color: #1f2937;
+          margin-top: 1.75rem;
+          margin-bottom: 0.75rem;
+          line-height: 1.3;
+        }
+        .article-content h1 { font-size: 1.875rem; }
+        .article-content h2 { font-size: 1.5rem;   }
+        .article-content h3 { font-size: 1.25rem;  }
+        .article-content h4 { font-size: 1.125rem; }
+
+        .article-content ul {
+          list-style-type: disc !important;
+          padding-left: 1.5rem !important;
+          margin: 1rem 0 1.25rem !important;
+        }
+        .article-content ol {
+          list-style-type: decimal !important;
+          padding-left: 1.5rem !important;
+          margin: 1rem 0 1.25rem !important;
+        }
+        .article-content li {
+          margin: 0.35rem 0 !important;
+        }
+        .article-content li > ul,
+        .article-content li > ol {
+          margin: 0.25rem 0 !important;
+        }
+
+        .article-content blockquote {
+          border-left: 3px solid #1B3766;
+          padding-left: 1rem;
+          margin: 1.25rem 0;
+          color: #4b5563;
+          font-style: italic;
+        }
+        .article-content a {
+          color: #1B3766;
+          text-decoration: underline;
+          text-underline-offset: 2px;
+        }
+        .article-content a:hover { color: #142952; }
+        .article-content img {
+          max-width: 100%;
+          height: auto;
+          border-radius: 0.75rem;
+          margin: 1.5rem 0;
+          box-shadow: 0 1px 4px rgba(0,0,0,0.08);
         }
       `}</style>
     </div>

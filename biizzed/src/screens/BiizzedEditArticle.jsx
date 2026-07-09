@@ -1,4 +1,4 @@
-// src/screens/BiizzedEditArticle.jsx
+// src/screens/BiizzedEditArticle.jsx – Full working version with visible lists
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useSelector } from 'react-redux';
@@ -50,12 +50,10 @@ const BiizzedEditArticle = () => {
   const navigate = useNavigate();
   const { userInfo } = useSelector((state) => state.auth);
 
-  // ── Queries & Mutations ──────────────────────────────────────────────────
   const {
     data: articleData,
     isLoading: isLoadingArticle,
     error: articleError,
-    refetch,
   } = useGetArticleByIdQuery(id, { skip: !id });
 
   const [updateArticle, { isLoading: isUpdating }] = useUpdateArticleMutation();
@@ -74,13 +72,9 @@ const BiizzedEditArticle = () => {
   const [showPreview, setShowPreview] = useState(false);
 
   // ── Cover Images ──────────────────────────────────────────────────────────
-  // Existing images from the article (as URLs)
   const [existingCoverImages, setExistingCoverImages] = useState([]);
-  // New images added by the user (files)
   const [newCoverImages, setNewCoverImages] = useState([]);
-  // Previews for new images
   const [newCoverImagePreviews, setNewCoverImagePreviews] = useState([]);
-  // List of URLs to keep (existing ones not removed)
   const [keepImageUrls, setKeepImageUrls] = useState([]);
   const fileInputRef = useRef(null);
 
@@ -89,6 +83,14 @@ const BiizzedEditArticle = () => {
     extensions: [
       StarterKit.configure({
         heading: { levels: [1, 2, 3, 4, 5, 6] },
+        bulletList: {
+          keepMarks: true,
+          keepAttributes: false,
+        },
+        orderedList: {
+          keepMarks: true,
+          keepAttributes: false,
+        },
       }),
       Placeholder.configure({
         placeholder: 'Write your article content here...',
@@ -242,11 +244,11 @@ const BiizzedEditArticle = () => {
       setIsEditorsPick(article.isEditorsPick || false);
       setStatus(article.status || 'draft');
       setComingSoon(article.comingSoon || false);
-      // Set cover images
+      
       const images = article.images || [];
       setExistingCoverImages(images);
       setKeepImageUrls(images);
-      // Set editor content
+      
       if (editor && article.content) {
         editor.commands.setContent(article.content);
       }
@@ -315,7 +317,6 @@ const BiizzedEditArticle = () => {
     if (!excerpt.trim()) newErrors.excerpt = 'Excerpt is required';
     if (excerpt.trim().length > 200) newErrors.excerpt = 'Excerpt must be <200 characters';
     if (!category) newErrors.category = 'Category is required';
-    // Cover image: at least one existing or one new
     if (existingCoverImages.length === 0 && newCoverImages.length === 0) {
       newErrors.coverImages = 'At least one cover image is required';
     }
@@ -349,9 +350,7 @@ const BiizzedEditArticle = () => {
       formData.append('isEditorsPick', isEditorsPick);
       formData.append('status', status);
       formData.append('comingSoon', comingSoon);
-      // Keep existing images that were not removed
       formData.append('keepImages', JSON.stringify(keepImageUrls));
-      // Append new image files
       newCoverImages.forEach(img => formData.append('images', img));
 
       const result = await updateArticle({ id, data: formData }).unwrap();
@@ -371,11 +370,10 @@ const BiizzedEditArticle = () => {
     }
   };
 
-  // ── Save as Draft (force draft) ──────────────────────────────────────────
+  // ── Save as Draft ──────────────────────────────────────────────────────────
   const handleSaveDraft = async () => {
     const originalStatus = status;
     setStatus('draft');
-    // Re‑submit with draft status
     const tempSubmit = async () => {
       try {
         const formData = new FormData();
@@ -499,7 +497,6 @@ const BiizzedEditArticle = () => {
             </label>
 
             <div className="space-y-3">
-              {/* Existing cover images */}
               {existingCoverImages.length > 0 && (
                 <div>
                   <p className="text-xs text-gray-500 mb-1">Current Cover Images</p>
@@ -532,7 +529,6 @@ const BiizzedEditArticle = () => {
                 </div>
               )}
 
-              {/* New cover images */}
               {newCoverImagePreviews.length > 0 && (
                 <div>
                   <p className="text-xs text-gray-500 mb-1">New Images to Add</p>
@@ -560,7 +556,6 @@ const BiizzedEditArticle = () => {
                 </div>
               )}
 
-              {/* Add more button */}
               <button
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
@@ -875,9 +870,11 @@ const BiizzedEditArticle = () => {
                   </div>
                 </div>
 
+                {/* ── Preview ──────────────────────────────────────────────── */}
                 <div className={showPreview ? 'block' : 'hidden'}>
                   <div className="min-h-[400px] p-6 border border-gray-200 rounded-xl bg-gray-50 prose prose-sm max-w-none">
                     <div
+                      className="article-content"
                       dangerouslySetInnerHTML={{
                         __html: editor?.getHTML() || '<p class="text-gray-400 italic">No content to preview</p>',
                       }}
@@ -1007,7 +1004,6 @@ const BiizzedEditArticle = () => {
             </button>
           </div>
 
-          {/* ── Info Notice ───────────────────────────────────────────────────── */}
           <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 flex items-start gap-3">
             <FaInfoCircle className="text-blue-500 text-lg flex-shrink-0 mt-0.5" />
             <div>
@@ -1026,6 +1022,7 @@ const BiizzedEditArticle = () => {
 
       <BiizzedBottomBar />
 
+      {/* ── Styles ────────────────────────────────────────────────────────────── */}
       <style>{`
         .ProseMirror {
           min-height: 300px;
@@ -1050,11 +1047,26 @@ const BiizzedEditArticle = () => {
           font-weight: 600;
           margin: 1rem 0 0.5rem;
         }
-        .ProseMirror ul,
-        .ProseMirror ol {
-          padding-left: 1.5rem;
-          margin: 0.75rem 0;
+
+        /* ── Make lists visible while editing ──────────────────────────────── */
+        .ProseMirror ul {
+          list-style-type: disc !important;
+          padding-left: 1.5rem !important;
+          margin: 0.75rem 0 !important;
         }
+        .ProseMirror ol {
+          list-style-type: decimal !important;
+          padding-left: 1.5rem !important;
+          margin: 0.75rem 0 !important;
+        }
+        .ProseMirror li {
+          margin: 0.25rem 0 !important;
+        }
+        .ProseMirror li > ul,
+        .ProseMirror li > ol {
+          margin: 0.25rem 0 !important;
+        }
+
         .ProseMirror blockquote {
           border-left: 3px solid #1B3766;
           padding-left: 1rem;
@@ -1113,6 +1125,72 @@ const BiizzedEditArticle = () => {
         }
         .ProseMirror a:hover {
           color: #142952;
+        }
+
+        /* ── Preview ──────────────────────────────────────────────────────────── */
+        .article-content {
+          color: #374151;
+          font-size: 15px;
+          line-height: 1.85;
+        }
+        @media (min-width: 640px) {
+          .article-content { font-size: 1rem; }
+        }
+        .article-content p {
+          margin-bottom: 1.25rem;
+        }
+        .article-content h1,
+        .article-content h2,
+        .article-content h3,
+        .article-content h4 {
+          font-weight: 700;
+          color: #1f2937;
+          margin-top: 1.75rem;
+          margin-bottom: 0.75rem;
+          line-height: 1.3;
+        }
+        .article-content h1 { font-size: 1.875rem; }
+        .article-content h2 { font-size: 1.5rem;   }
+        .article-content h3 { font-size: 1.25rem;  }
+        .article-content h4 { font-size: 1.125rem; }
+
+        .article-content ul {
+          list-style-type: disc !important;
+          padding-left: 1.5rem !important;
+          margin: 1rem 0 1.25rem !important;
+        }
+        .article-content ol {
+          list-style-type: decimal !important;
+          padding-left: 1.5rem !important;
+          margin: 1rem 0 1.25rem !important;
+        }
+        .article-content li {
+          margin: 0.35rem 0 !important;
+        }
+        .article-content li > ul,
+        .article-content li > ol {
+          margin: 0.25rem 0 !important;
+        }
+
+        .article-content blockquote {
+          border-left: 3px solid #1B3766;
+          padding-left: 1rem;
+          margin: 1.25rem 0;
+          color: #4b5563;
+          font-style: italic;
+        }
+        .article-content a {
+          color: #1B3766;
+          text-decoration: underline;
+          text-underline-offset: 2px;
+        }
+        .article-content a:hover { color: #142952; }
+        .article-content img {
+          max-width: 100%;
+          height: auto;
+          border-radius: 0.75rem;
+          margin: 1.5rem 0;
+          box-shadow: 0 1px 4px rgba(0,0,0,0.08);
         }
       `}</style>
     </div>

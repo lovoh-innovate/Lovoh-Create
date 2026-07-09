@@ -26,6 +26,9 @@ import notificationRoutes from "./routes/notificationRoutes.js";
 import searchRoutes from "./routes/searchRoutes.js";
 import payoutRoutes from "./routes/payoutRoutes.js";
 import uduuaSettingsRoutes from "./routes/uduuaSettingsRoutes.js";
+
+//AI
+import deepseekRoutes from './routes/deepseekRoutes.js'; // Import DeepSeek routes
 import './cronJobs.js'; // Import cron jobs
 
 // Security imports
@@ -129,6 +132,9 @@ app.use("/api/notifications", notificationRoutes);
 app.use("/api/search", searchRoutes);
 app.use("/api/payouts", payoutRoutes);
 app.use("/api/uduua-settings", uduuaSettingsRoutes);
+
+//AI routes
+app.use('/api/deepseek', deepseekRoutes); // Use DeepSeek routes
 
 // Temp route
 app.get('/api/fix-admin-types', async (req, res) => {
