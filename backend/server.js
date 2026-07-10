@@ -44,15 +44,37 @@ const MONGO_URL = process.env.MONGO_URL;
 // ===== SECURITY HEADERS (Helmet) =====
 app.use(helmet());
 
+// ===== UPDATED CSP: allow Google scripts & fonts =====
 app.use(
   helmet.contentSecurityPolicy({
     directives: {
       defaultSrc: ["'self'"],
-      styleSrc: ["'self'", "'unsafe-inline'", "https:", "http:"],
-      scriptSrc: ["'self'", "'unsafe-inline'", "https:", "http:"],
+      styleSrc: [
+        "'self'",
+        "'unsafe-inline'",
+        "https:",
+        "http:",
+        "https://fonts.googleapis.com",
+        "https://fonts.gstatic.com"
+      ],
+      scriptSrc: [
+        "'self'",
+        "'unsafe-inline'",
+        "https:",
+        "http:",
+        "https://accounts.google.com",
+        "https://apis.google.com"
+      ],
       imgSrc: ["'self'", "data:", "blob:", "https:", "http:"],
-      fontSrc: ["'self'", "https:", "data:"],
-      connectSrc: ["'self'", "https:", "http:", "ws:", "wss:"],
+      fontSrc: ["'self'", "https:", "data:", "https://fonts.gstatic.com"],
+      connectSrc: [
+        "'self'",
+        "https:",
+        "http:",
+        "ws:",
+        "wss:",
+        "https://accounts.google.com"
+      ],
       mediaSrc: ["'self'", "https:", "http:"],
       objectSrc: ["'none'"],
       frameSrc: ["'self'"],
