@@ -28,6 +28,7 @@ import EventDashboardEventRegistrations from "./screens/EventDashboardEventRegis
 import EventDashboardEditEvent from "./screens/EventDashboardEditEvent.jsx";
 import EventDashboardTeam from "./screens/EventDashboardTeam.jsx";
 import PosterGeneratorPage from "./screens/PosterGeneratorPage.jsx";
+import IWillAttend from "./screens/IWillAttend.jsx";
 
 import NotFound from "./screens/NotFound.jsx";
 
@@ -43,7 +44,8 @@ const router = createBrowserRouter([
       { path: ":id/register", element: <EventRegistration /> },
       { path: "login", element: <EventLogin /> },
       { path: "signup", element: <EventSignup /> },
-      {path: "poster/:registrationId", element: <PosterGeneratorPage />},
+      { path: "poster/:registrationId", element: <PosterGeneratorPage /> },
+      { path: "i-will-attend", element: <IWillAttend /> },
       {
         element: <UserPrivateRoute />,
         children: [
@@ -56,7 +58,7 @@ const router = createBrowserRouter([
           { path: "dashboard/events/:id", element: <EventDashboardEventDetail /> },
           { path: "dashboard/events/:id/registrations", element: <EventDashboardEventRegistrations /> },
           { path: "dashboard/events/:id/edit", element: <EventDashboardEditEvent /> },
-          {path: "dashboard/team", element: <EventDashboardTeam />},
+          { path: "dashboard/team", element: <EventDashboardTeam /> },
         ],
       },
       // ⚠️ Catch-all route – must be the last child

@@ -26,6 +26,7 @@ import notificationRoutes from "./routes/notificationRoutes.js";
 import searchRoutes from "./routes/searchRoutes.js";
 import payoutRoutes from "./routes/payoutRoutes.js";
 import uduuaSettingsRoutes from "./routes/uduuaSettingsRoutes.js";
+import aiRoutes from './routes/aiRoutes.js';
 
 //AI
 import deepseekRoutes from './routes/deepseekRoutes.js'; // Import DeepSeek routes
@@ -111,6 +112,8 @@ app.use(cors({
         'https://localhost',
         'capacitor://localhost',
         'https://test.eventroom.space',
+        'https://www.uduua.ng',
+        'https://uduua.ng',
     ],
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'HEAD'],
@@ -154,6 +157,7 @@ app.use("/api/notifications", notificationRoutes);
 app.use("/api/search", searchRoutes);
 app.use("/api/payouts", payoutRoutes);
 app.use("/api/uduua-settings", uduuaSettingsRoutes);
+app.use('/api/ai', aiRoutes);
 
 //AI routes
 app.use('/api/deepseek', deepseekRoutes); // Use DeepSeek routes
